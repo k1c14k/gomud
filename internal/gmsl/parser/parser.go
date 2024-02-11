@@ -38,7 +38,7 @@ func (p *Parser) parseClass() *Class {
 		case lexer.EofToken:
 			return &class
 		default:
-			log.Panicln("Unexpected token", peeked.String())
+			p.unexpectedToken(peeked)
 		}
 	}
 }
@@ -78,7 +78,7 @@ func (p *Parser) parseImportDeclaration() ImportDeclaration {
 	case lexer.OpenParenToken:
 		return p.parseImportDeclarationList()
 	default:
-		log.Panicln("Unexpected token", tokens[1].String())
+		p.unexpectedToken(tokens[1])
 	}
 	return nil
 }
@@ -97,7 +97,7 @@ func (p *Parser) parseImportDeclarationList() ImportDeclaration {
 	imports := make([]*Identifier, 0)
 	skip := p.lexer.ReadNext()
 	if skip.Typ != lexer.OpenParenToken {
-		log.Panicln("Expected OpenParenToken, got", skip.String())
+		p.unexpectedTokenExpected(lexer.OpenParenToken, skip)
 	}
 	for {
 		token := p.lexer.Peek()
@@ -155,7 +155,7 @@ func (p *Parser) parseArgumentDeclarations() []ArgumentDeclaration {
 	log.Println("Parsing arguments")
 	token := p.lexer.ReadNext()
 	if token.Typ != lexer.OpenParenToken {
-		log.Panicln("Expected OpenParenToken, got", token.String())
+		p.unexpectedTokenExpected(lexer.OpenParenToken, token)
 	}
 
 	arguments := make([]ArgumentDeclaration, 0)
@@ -216,10 +216,10 @@ func (p *Parser) parseStatement() Statement {
 		case lexer.MethodCallToken:
 			return p.parseExpressionStatement()
 		default:
-			log.Panicln("Unexpected token", peeked[1].String())
+			p.unexpectedToken(peeked[1])
 		}
 	} else {
-		log.Panicln("Unexpected token", peeked[0].String())
+		p.unexpectedToken(peeked[0])
 	}
 	return nil
 }
@@ -233,12 +233,13 @@ func (p *Parser) parseExpressionStatement() Statement {
 func (p *Parser) parseExpression() Expression {
 	log.Println("Parsing ExpressionValue")
 	peeked := p.lexer.PeekSome(2)
-	var expression Expression
+
+	tree := NewExpressionTree()
 
 	switch peeked[0].Typ {
 	case lexer.IdentifierToken, lexer.StringToken:
 	default:
-		log.Panicln("Unexpected token", peeked[0].String())
+		p.unexpectedToken(peeked[0])
 
 	}
 
@@ -246,47 +247,27 @@ func (p *Parser) parseExpression() Expression {
 		peeked := p.lexer.PeekSome(2)
 		switch {
 		case peeked[1].Typ == lexer.MethodCallToken:
-			if expression == nil {
-				expression = p.parseMethodCallExpression()
-			} else {
-				switch expression.(type) {
-				case *BinaryExpression:
-					if expression.(*BinaryExpression).Right == nil {
-						expression.(*BinaryExpression).Right = p.parseMethodCallExpression()
-					} else {
-						return expression
-					}
-				}
+			if !tree.CanAddLeaf() {
+				return tree.GetExpression()
 			}
+			tree.AddExpression(p.parseMethodCallExpression())
 
 		case peeked[0].Typ == lexer.StringToken:
-			if expression == nil {
-				expression = p.parseStringLiteralExpression()
-			} else {
-				switch expression.(type) {
-				case *BinaryExpression:
-					if expression.(*BinaryExpression).Right == nil {
-						expression.(*BinaryExpression).Right = p.parseStringLiteralExpression()
-					} else {
-						return expression
-					}
-				}
+			if !tree.CanAddLeaf() {
+				return tree.GetExpression()
 			}
+			tree.AddExpression(p.parseStringLiteralExpression())
 		case peeked[0].Typ == lexer.AddToken:
-			token := p.lexer.ReadNext()
-			if expression == nil {
-				log.Panicln("Unexpected token", peeked[0].String())
-			} else {
-				expression = &BinaryExpression{token: token, Left: expression}
+			if !tree.CanAddBranch() {
+				p.unexpectedToken(peeked[0])
 			}
+			tree.AddExpression(&BinaryExpression{token: p.lexer.ReadNext()})
 		case peeked[0].Typ == lexer.CloseParenToken || peeked[0].Typ == lexer.CloseBraceToken:
-			return expression
+			return tree.GetExpression()
 		default:
-			log.Panicln("Unexpected token", peeked[0].String())
+			p.unexpectedToken(peeked[0])
 		}
 	}
-
-	return expression
 }
 
 func (p *Parser) parseMethodCallExpression() Expression {
@@ -314,7 +295,7 @@ func (p *Parser) parseArguments() []Expression {
 	log.Println("Parsing arguments")
 	token := p.lexer.ReadNext()
 	if token.Typ != lexer.OpenParenToken {
-		log.Panicln("Expected OpenParenToken, got", token.String())
+		p.unexpectedTokenExpected(lexer.OpenParenToken, token)
 	}
 
 	arguments := make([]Expression, 0)
@@ -339,4 +320,12 @@ func (p *Parser) parseStringLiteralExpression() Expression {
 	}
 
 	return &StringLiteralExpression{token: token, Value: token.Value}
+}
+
+func (p *Parser) unexpectedToken(token *lexer.Token) {
+	log.Panicln("Unexpected token", token.String())
+}
+
+func (p *Parser) unexpectedTokenExpected(expected lexer.TokenType, actual *lexer.Token) {
+	log.Panicln("Unexpected token", actual.String(), "expected", expected)
 }
