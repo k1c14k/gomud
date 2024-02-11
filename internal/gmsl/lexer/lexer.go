@@ -1,67 +1,18 @@
-package gmsl
+package lexer
 
 import (
 	"log"
 	"strings"
 )
 
-type TokenType int
-
-const (
-	InvalidToken TokenType = iota
-	EofToken
-	PackageToken
-	ImportToken
-	FuncToken
-	IdentifierToken
-	OpenParenToken
-	CloseParenToken
-	OpenBraceToken
-	CloseBraceToken
-	StringToken
-	AddToken
-	MethodCallToken
-	TypeToken
-)
-
-var tokenNames = map[TokenType]string{
-	InvalidToken:    "InvalidToken",
-	EofToken:        "EofToken",
-	PackageToken:    "PackageToken",
-	ImportToken:     "ImportToken",
-	FuncToken:       "FuncToken",
-	IdentifierToken: "IdentifierToken",
-	OpenParenToken:  "OpenParenToken",
-	CloseParenToken: "CloseParenToken",
-	OpenBraceToken:  "OpenBraceToken",
-	CloseBraceToken: "CloseBraceToken",
-	StringToken:     "StringToken",
-	AddToken:        "AddToken",
-	MethodCallToken: "MethodCallToken",
-	TypeToken:       "TypeToken",
-}
-
-func (t TokenType) String() string {
-	return tokenNames[t]
-}
-
-type Token struct {
-	Typ   TokenType
-	Value string
-}
-
-func (t *Token) String() string {
-	return tokenNames[t.Typ] + " " + t.Value
-}
-
-type LexerState func(*Lexer) LexerState
+type State func(*Lexer) State
 
 type Lexer struct {
 	input  string
 	start  int
 	pos    int
 	tokens chan Token
-	state  LexerState
+	state  State
 	peeked []*Token
 }
 
@@ -205,7 +156,11 @@ func (l *Lexer) Peek() *Token {
 	return l.PeekSome(1)[0]
 }
 
-func defaultState(l *Lexer) LexerState {
+func (l *Lexer) invalidToken() {
+	l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
+}
+
+func defaultState(l *Lexer) State {
 whitespaces:
 	for {
 		if l.pos >= len(l.input) {
@@ -239,7 +194,7 @@ whitespaces:
 	}
 }
 
-func keywordState(l *Lexer) LexerState {
+func keywordState(l *Lexer) State {
 	for k, v := range keywords {
 		if strings.HasPrefix(l.input[l.pos:], k+" ") {
 			l.pos += len(k) + 1
@@ -248,11 +203,11 @@ func keywordState(l *Lexer) LexerState {
 			return defaultState
 		}
 	}
-	l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
+	l.invalidToken()
 	return nil
 }
 
-func identifierState(l *Lexer) LexerState {
+func identifierState(l *Lexer) State {
 	for {
 		if l.pos >= len(l.input) {
 			l.tokens <- Token{EofToken, ""}
@@ -276,7 +231,7 @@ func identifierState(l *Lexer) LexerState {
 	}
 }
 
-func parenthesisState(l *Lexer) LexerState {
+func parenthesisState(l *Lexer) State {
 	for k, v := range parenthesis {
 		if strings.HasPrefix(l.input[l.pos:], k) {
 			l.pos += len(k)
@@ -285,11 +240,11 @@ func parenthesisState(l *Lexer) LexerState {
 			return defaultState
 		}
 	}
-	l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
+	l.invalidToken()
 	return nil
 }
 
-func stringState(l *Lexer) LexerState {
+func stringState(l *Lexer) State {
 	for {
 		if l.pos >= len(l.input) {
 			l.tokens <- Token{EofToken, ""}
@@ -302,7 +257,7 @@ func stringState(l *Lexer) LexerState {
 			l.start = l.pos
 			return defaultState
 		case '\r', '\n':
-			l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
+			l.invalidToken()
 			return nil
 		default:
 			l.pos++
@@ -310,7 +265,7 @@ func stringState(l *Lexer) LexerState {
 	}
 }
 
-func operatorState(l *Lexer) LexerState {
+func operatorState(l *Lexer) State {
 	for k, v := range operator {
 		if strings.HasPrefix(l.input[l.pos:], k) {
 			l.pos += len(k)
@@ -319,11 +274,11 @@ func operatorState(l *Lexer) LexerState {
 			return defaultState
 		}
 	}
-	l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
+	l.invalidToken()
 	return nil
 }
 
-func typeState(l *Lexer) LexerState {
+func typeState(l *Lexer) State {
 	for _, t := range types {
 		if strings.HasPrefix(l.input[l.pos:], t) {
 			l.pos += len(t)
@@ -332,6 +287,6 @@ func typeState(l *Lexer) LexerState {
 			return defaultState
 		}
 	}
-	l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
+	l.invalidToken()
 	return nil
 }
