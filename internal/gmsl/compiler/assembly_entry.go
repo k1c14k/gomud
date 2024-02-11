@@ -68,7 +68,7 @@ var tokenValueToOperationType = map[string]OperationType{
 }
 
 func NewOperationEntry(token lexer.Token) AssemblyEntry {
-	operation := tokenValueToOperationType[token.Value]
+	operation := tokenValueToOperationType[token.GetRawValue()]
 	return &OperationEntry{Operation: operation, source: token}
 }
 

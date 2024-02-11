@@ -1,5 +1,7 @@
 package lexer
 
+import "bytes"
+
 type TokenType int
 
 const (
@@ -41,10 +43,46 @@ func (t TokenType) String() string {
 }
 
 type Token struct {
-	Typ   TokenType
-	Value string
+	Typ      TokenType
+	rawValue string
 }
 
 func (t *Token) String() string {
-	return tokenNames[t.Typ] + " " + t.Value
+	return tokenNames[t.Typ] + " " + t.rawValue
+}
+
+func (t *Token) GetRawValue() string {
+	return t.rawValue
+}
+
+func (t *Token) GetValueString() (string, error) {
+	buffer := bytes.NewBufferString("")
+	reader := bytes.NewReader([]byte(t.rawValue))
+	for {
+		b, err := reader.ReadByte()
+		if err != nil {
+			break
+		}
+		switch b {
+		case '\\':
+			b, err = reader.ReadByte()
+			if err != nil {
+				return "", err
+			}
+			switch b {
+			case 'n':
+				buffer.WriteByte('\r')
+				buffer.WriteByte('\n')
+			case 't':
+				buffer.WriteByte('\t')
+			case 'r':
+				// ignore
+			default:
+				buffer.WriteByte(b)
+			}
+		default:
+			buffer.WriteByte(b)
+		}
+	}
+	return buffer.String(), nil
 }
