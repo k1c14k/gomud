@@ -279,13 +279,10 @@ func (p *Parser) parseExpression() Expression {
 			} else {
 				expression = &BinaryExpression{token: token, Left: expression}
 			}
-		case peeked[0].Typ == gmsl.CloseParenToken:
-			return expression
-		case peeked[0].Typ == gmsl.SemicolonToken:
-			p.lexer.ReadNext()
+		case peeked[0].Typ == gmsl.CloseParenToken || peeked[0].Typ == gmsl.CloseBraceToken:
 			return expression
 		default:
-			log.Panicln("Unexpected token", peeked[1].String())
+			log.Panicln("Unexpected token", peeked[0].String())
 		}
 	}
 

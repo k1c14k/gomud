@@ -21,7 +21,6 @@ const (
 	StringToken
 	AddToken
 	MethodCallToken
-	SemicolonToken
 	TypeToken
 )
 
@@ -39,7 +38,6 @@ var tokenNames = map[TokenType]string{
 	StringToken:     "StringToken",
 	AddToken:        "AddToken",
 	MethodCallToken: "MethodCallToken",
-	SemicolonToken:  "SemicolonToken",
 	TypeToken:       "TypeToken",
 }
 
@@ -159,7 +157,6 @@ func (l *Lexer) isParenthesis() bool {
 var operator = map[string]TokenType{
 	"+": AddToken,
 	".": MethodCallToken,
-	";": SemicolonToken,
 }
 
 func isOperator(r rune) bool {
