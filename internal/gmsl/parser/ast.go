@@ -2,17 +2,17 @@ package parser
 
 import (
 	"bytes"
-	"goMud/internal/gmsl"
+	"goMud/internal/gmsl/lexer"
 )
 
 type AstNode interface {
-	GetToken() *gmsl.Token
+	GetToken() *lexer.Token
 	String() string
 }
 
 type Identifier struct {
 	AstNode
-	token *gmsl.Token
+	token *lexer.Token
 	Value string
 }
 
@@ -23,26 +23,26 @@ type ImportDeclaration interface {
 type SingleImportDeclaration struct {
 	AstNode
 	ImportDeclaration
-	token *gmsl.Token
+	token *lexer.Token
 	Name  *Identifier
 }
 
 type ImportDeclarationList struct {
 	AstNode
 	ImportDeclaration
-	token   *gmsl.Token
+	token   *lexer.Token
 	Imports []*Identifier
 }
 
 type Type struct {
 	AstNode
-	token *gmsl.Token
+	token *lexer.Token
 	Name  string
 }
 
 type ArgumentDeclaration struct {
 	AstNode
-	token *gmsl.Token
+	token *lexer.Token
 	Name  *Identifier
 	Typ   *Type
 }
@@ -58,7 +58,7 @@ type Expression interface {
 type BinaryExpression struct {
 	AstNode
 	Expression
-	token *gmsl.Token
+	token *lexer.Token
 	Left  Expression
 	Right Expression
 }
@@ -66,14 +66,14 @@ type BinaryExpression struct {
 type StringLiteralExpression struct {
 	AstNode
 	Expression
-	token *gmsl.Token
+	token *lexer.Token
 	Value string
 }
 
 type MethodCallExpression struct {
 	AstNode
 	Expression
-	token      *gmsl.Token
+	token      *lexer.Token
 	ObjectName *Identifier
 	MethodName *Identifier
 	Arguments  []Expression
@@ -82,13 +82,13 @@ type MethodCallExpression struct {
 type ExpressionStatement struct {
 	AstNode
 	Expression
-	token           *gmsl.Token
+	token           *lexer.Token
 	ExpressionValue Expression
 }
 
 type FunctionDeclaration struct {
 	AstNode
-	token      *gmsl.Token
+	token      *lexer.Token
 	Name       *Identifier
 	Arguments  []ArgumentDeclaration
 	Statements []Statement
@@ -96,13 +96,13 @@ type FunctionDeclaration struct {
 
 type Class struct {
 	AstNode
-	token     *gmsl.Token
+	token     *lexer.Token
 	Name      *Identifier
 	Imports   []ImportDeclaration
 	Functions []FunctionDeclaration
 }
 
-func (c *Class) GetToken() *gmsl.Token {
+func (c *Class) GetToken() *lexer.Token {
 	return c.token
 }
 
@@ -122,7 +122,7 @@ func (c *Class) String() string {
 	return buf.String()
 }
 
-func (s *SingleImportDeclaration) GetToken() *gmsl.Token {
+func (s *SingleImportDeclaration) GetToken() *lexer.Token {
 	return s.token
 }
 
@@ -134,7 +134,7 @@ func (s *SingleImportDeclaration) String() string {
 	return buf.String()
 }
 
-func (i *ImportDeclarationList) GetToken() *gmsl.Token {
+func (i *ImportDeclarationList) GetToken() *lexer.Token {
 	return i.token
 }
 
@@ -149,7 +149,7 @@ func (i *ImportDeclarationList) String() string {
 	return buf.String()
 }
 
-func (i *Identifier) GetToken() *gmsl.Token {
+func (i *Identifier) GetToken() *lexer.Token {
 	return i.token
 }
 
@@ -157,7 +157,7 @@ func (i *Identifier) String() string {
 	return i.Value
 }
 
-func (b *BinaryExpression) GetToken() *gmsl.Token {
+func (b *BinaryExpression) GetToken() *lexer.Token {
 	return b.token
 }
 
@@ -173,7 +173,7 @@ func (b *BinaryExpression) String() string {
 	return buf.String()
 }
 
-func (m *MethodCallExpression) GetToken() *gmsl.Token {
+func (m *MethodCallExpression) GetToken() *lexer.Token {
 	return m.token
 }
 
@@ -191,7 +191,7 @@ func (m *MethodCallExpression) String() string {
 	return buf.String()
 }
 
-func (s *StringLiteralExpression) GetToken() *gmsl.Token {
+func (s *StringLiteralExpression) GetToken() *lexer.Token {
 	return s.token
 }
 
@@ -203,7 +203,7 @@ func (s *StringLiteralExpression) String() string {
 	return buf.String()
 }
 
-func (f *FunctionDeclaration) GetToken() *gmsl.Token {
+func (f *FunctionDeclaration) GetToken() *lexer.Token {
 	return f.token
 }
 
@@ -223,7 +223,7 @@ func (f *FunctionDeclaration) String() string {
 	return buf.String()
 }
 
-func (a *ArgumentDeclaration) GetToken() *gmsl.Token {
+func (a *ArgumentDeclaration) GetToken() *lexer.Token {
 	return a.token
 }
 
@@ -237,7 +237,7 @@ func (a *ArgumentDeclaration) String() string {
 	return buf.String()
 }
 
-func (e *ExpressionStatement) GetToken() *gmsl.Token {
+func (e *ExpressionStatement) GetToken() *lexer.Token {
 	return e.token
 }
 
@@ -245,7 +245,7 @@ func (e *ExpressionStatement) String() string {
 	return e.ExpressionValue.String()
 }
 
-func (t *Type) GetToken() *gmsl.Token {
+func (t *Type) GetToken() *lexer.Token {
 	return t.token
 }
 

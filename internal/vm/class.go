@@ -1,8 +1,8 @@
 package vm
 
 import (
-	"goMud/internal/gmsl"
 	"goMud/internal/gmsl/compiler"
+	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
 	"log"
 	"os"
@@ -35,7 +35,7 @@ func NewClass(name string) Class {
 		log.Panicln("Error reading file:", err)
 	}
 
-	l := gmsl.NewLexer(string(b))
+	l := lexer.NewLexer(string(b))
 	p := parser.NewParser(l)
 	ast := p.Parse()
 	aOut := compiler.NewCompiler(ast).Compile()

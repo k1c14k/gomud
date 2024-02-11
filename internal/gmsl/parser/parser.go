@@ -1,15 +1,15 @@
 package parser
 
 import (
-	"goMud/internal/gmsl"
+	"goMud/internal/gmsl/lexer"
 	"log"
 )
 
 type Parser struct {
-	lexer *gmsl.Lexer
+	lexer *lexer.Lexer
 }
 
-func NewParser(l *gmsl.Lexer) *Parser {
+func NewParser(l *lexer.Lexer) *Parser {
 	return &Parser{l}
 }
 
@@ -20,7 +20,7 @@ func (p *Parser) Parse() *Class {
 func (p *Parser) parseClass() *Class {
 	log.Println("Parsing class")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.PackageToken {
+	if token.Typ != lexer.PackageToken {
 		panic("Expected class")
 	}
 
@@ -29,16 +29,16 @@ func (p *Parser) parseClass() *Class {
 	for {
 		peeked := p.lexer.Peek()
 		switch peeked.Typ {
-		case gmsl.ImportToken:
+		case lexer.ImportToken:
 			imports := p.parseImportDeclarations()
 			class.Imports = append(class.Imports, imports...)
-		case gmsl.FuncToken:
+		case lexer.FuncToken:
 			functions := p.parseFunctionDeclarations()
 			class.Functions = append(class.Functions, functions...)
-		case gmsl.EofToken:
+		case lexer.EofToken:
 			return &class
 		default:
-			log.Panicln("Unexpected token", peeked.String())
+			p.unexpectedToken(peeked)
 		}
 	}
 }
@@ -46,7 +46,7 @@ func (p *Parser) parseClass() *Class {
 func (p *Parser) parseIdentifier() *Identifier {
 	log.Println("Parsing identifier")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.IdentifierToken {
+	if token.Typ != lexer.IdentifierToken {
 		log.Panicln("Expected identifier, got", token.String())
 	}
 
@@ -57,7 +57,7 @@ func (p *Parser) parseImportDeclarations() []ImportDeclaration {
 	log.Println("Parsing import declarations")
 	token := p.lexer.Peek()
 	tokenDeclarations := make([]ImportDeclaration, 0)
-	if token.Typ == gmsl.ImportToken {
+	if token.Typ == lexer.ImportToken {
 		declaration := p.parseImportDeclaration()
 		tokenDeclarations = append(tokenDeclarations, declaration)
 	}
@@ -73,12 +73,12 @@ func (p *Parser) parseImportDeclaration() ImportDeclaration {
 	}
 
 	switch tokens[1].Typ {
-	case gmsl.IdentifierToken:
+	case lexer.IdentifierToken:
 		return p.parseSingleImportDeclaration()
-	case gmsl.OpenParenToken:
+	case lexer.OpenParenToken:
 		return p.parseImportDeclarationList()
 	default:
-		log.Panicln("Unexpected token", tokens[1].String())
+		p.unexpectedToken(tokens[1])
 	}
 	return nil
 }
@@ -96,12 +96,12 @@ func (p *Parser) parseImportDeclarationList() ImportDeclaration {
 	token := p.lexer.ReadNext()
 	imports := make([]*Identifier, 0)
 	skip := p.lexer.ReadNext()
-	if skip.Typ != gmsl.OpenParenToken {
-		log.Panicln("Expected OpenParenToken, got", skip.String())
+	if skip.Typ != lexer.OpenParenToken {
+		p.unexpectedTokenExpected(lexer.OpenParenToken, skip)
 	}
 	for {
 		token := p.lexer.Peek()
-		if token.Typ == gmsl.CloseParenToken {
+		if token.Typ == lexer.CloseParenToken {
 			p.lexer.ReadNext()
 			break
 		}
@@ -114,7 +114,7 @@ func (p *Parser) parseImportDeclarationList() ImportDeclaration {
 func (p *Parser) parseStringValue() *Identifier {
 	log.Println("Parsing string value")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.StringToken {
+	if token.Typ != lexer.StringToken {
 		log.Panicln("Expected string value, got", token.String())
 	}
 
@@ -127,7 +127,7 @@ func (p *Parser) parseFunctionDeclarations() []FunctionDeclaration {
 	var functions []FunctionDeclaration
 	for {
 		token := p.lexer.Peek()
-		if token.Typ == gmsl.FuncToken {
+		if token.Typ == lexer.FuncToken {
 			functions = append(functions, p.parseFunctionDeclaration())
 		} else {
 			break
@@ -139,7 +139,7 @@ func (p *Parser) parseFunctionDeclarations() []FunctionDeclaration {
 func (p *Parser) parseFunctionDeclaration() FunctionDeclaration {
 	log.Println("Parsing function declaration")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.FuncToken {
+	if token.Typ != lexer.FuncToken {
 		log.Panicln("Expected FuncToken, got", token.String())
 	}
 
@@ -154,14 +154,14 @@ func (p *Parser) parseFunctionDeclaration() FunctionDeclaration {
 func (p *Parser) parseArgumentDeclarations() []ArgumentDeclaration {
 	log.Println("Parsing arguments")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.OpenParenToken {
-		log.Panicln("Expected OpenParenToken, got", token.String())
+	if token.Typ != lexer.OpenParenToken {
+		p.unexpectedTokenExpected(lexer.OpenParenToken, token)
 	}
 
 	arguments := make([]ArgumentDeclaration, 0)
 	for {
 		token := p.lexer.Peek()
-		if token.Typ == gmsl.CloseParenToken {
+		if token.Typ == lexer.CloseParenToken {
 			p.lexer.ReadNext()
 			break
 		}
@@ -182,7 +182,7 @@ func (p *Parser) parseArgumentDeclaration() ArgumentDeclaration {
 func (p *Parser) parseType() *Type {
 	log.Println("Parsing type")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.TypeToken {
+	if token.Typ != lexer.TypeToken {
 		log.Panicln("Expected TypeToken, got", token.String())
 	}
 
@@ -192,13 +192,13 @@ func (p *Parser) parseType() *Type {
 func (p *Parser) parseStatements() []Statement {
 	log.Println("Parsing statements")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.OpenBraceToken {
+	if token.Typ != lexer.OpenBraceToken {
 		log.Panicln("Expected OpenBraceToken, got", token.String())
 	}
 	statements := make([]Statement, 0)
 	for {
 		token := p.lexer.Peek()
-		if token.Typ == gmsl.CloseBraceToken {
+		if token.Typ == lexer.CloseBraceToken {
 			p.lexer.ReadNext()
 			break
 		}
@@ -211,15 +211,15 @@ func (p *Parser) parseStatement() Statement {
 	log.Println("Parsing statement")
 	peeked := p.lexer.PeekSome(2)
 
-	if peeked[0].Typ == gmsl.IdentifierToken {
+	if peeked[0].Typ == lexer.IdentifierToken {
 		switch peeked[1].Typ {
-		case gmsl.MethodCallToken:
+		case lexer.MethodCallToken:
 			return p.parseExpressionStatement()
 		default:
-			log.Panicln("Unexpected token", peeked[1].String())
+			p.unexpectedToken(peeked[1])
 		}
 	} else {
-		log.Panicln("Unexpected token", peeked[0].String())
+		p.unexpectedToken(peeked[0])
 	}
 	return nil
 }
@@ -233,77 +233,55 @@ func (p *Parser) parseExpressionStatement() Statement {
 func (p *Parser) parseExpression() Expression {
 	log.Println("Parsing ExpressionValue")
 	peeked := p.lexer.PeekSome(2)
-	var expression Expression
+
+	tree := NewExpressionTree()
 
 	switch peeked[0].Typ {
-	case gmsl.IdentifierToken, gmsl.StringToken:
+	case lexer.IdentifierToken, lexer.StringToken:
 	default:
-		log.Panicln("Unexpected token", peeked[0].String())
+		p.unexpectedToken(peeked[0])
 
 	}
 
 	for {
 		peeked := p.lexer.PeekSome(2)
 		switch {
-		case peeked[1].Typ == gmsl.MethodCallToken:
-			if expression == nil {
-				expression = p.parseMethodCallExpression()
-			} else {
-				switch expression.(type) {
-				case *BinaryExpression:
-					if expression.(*BinaryExpression).Right == nil {
-						expression.(*BinaryExpression).Right = p.parseMethodCallExpression()
-					} else {
-						return expression
-					}
-				}
+		case peeked[1].Typ == lexer.MethodCallToken:
+			if !tree.CanAddLeaf() {
+				return tree.GetExpression()
 			}
+			tree.AddExpression(p.parseMethodCallExpression())
 
-		case peeked[0].Typ == gmsl.StringToken:
-			if expression == nil {
-				expression = p.parseStringLiteralExpression()
-			} else {
-				switch expression.(type) {
-				case *BinaryExpression:
-					if expression.(*BinaryExpression).Right == nil {
-						expression.(*BinaryExpression).Right = p.parseStringLiteralExpression()
-					} else {
-						return expression
-					}
-				}
+		case peeked[0].Typ == lexer.StringToken:
+			if !tree.CanAddLeaf() {
+				return tree.GetExpression()
 			}
-		case peeked[0].Typ == gmsl.AddToken:
-			token := p.lexer.ReadNext()
-			if expression == nil {
-				log.Panicln("Unexpected token", peeked[0].String())
-			} else {
-				expression = &BinaryExpression{token: token, Left: expression}
+			tree.AddExpression(p.parseStringLiteralExpression())
+		case peeked[0].Typ == lexer.AddToken:
+			if !tree.CanAddBranch() {
+				p.unexpectedToken(peeked[0])
 			}
-		case peeked[0].Typ == gmsl.CloseParenToken:
-			return expression
-		case peeked[0].Typ == gmsl.SemicolonToken:
-			p.lexer.ReadNext()
-			return expression
+			tree.AddExpression(&BinaryExpression{token: p.lexer.ReadNext()})
+		case peeked[0].Typ == lexer.CloseParenToken || peeked[0].Typ == lexer.CloseBraceToken:
+			return tree.GetExpression()
 		default:
-			log.Panicln("Unexpected token", peeked[1].String())
+			p.unexpectedToken(peeked[0])
 		}
 	}
-
-	return expression
 }
 
 func (p *Parser) parseMethodCallExpression() Expression {
 	log.Println("Parsing method call ExpressionValue")
 	var result MethodCallExpression
 	token := p.lexer.Peek()
-	if token.Typ != gmsl.IdentifierToken {
+	if token.Typ != lexer.IdentifierToken {
 		log.Panicln("Expected IdentifierToken, got", token.String())
 	}
 
 	result.ObjectName = p.parseIdentifier()
 
 	token = p.lexer.ReadNext()
-	if token.Typ != gmsl.MethodCallToken {
+	if token.Typ != lexer.MethodCallToken {
 		log.Panicln("Expected MethodCallToken, got", token.String())
 	}
 	result.token = token
@@ -316,14 +294,14 @@ func (p *Parser) parseMethodCallExpression() Expression {
 func (p *Parser) parseArguments() []Expression {
 	log.Println("Parsing arguments")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.OpenParenToken {
-		log.Panicln("Expected OpenParenToken, got", token.String())
+	if token.Typ != lexer.OpenParenToken {
+		p.unexpectedTokenExpected(lexer.OpenParenToken, token)
 	}
 
 	arguments := make([]Expression, 0)
 	for {
 		token := p.lexer.Peek()
-		if token.Typ == gmsl.CloseParenToken {
+		if token.Typ == lexer.CloseParenToken {
 			p.lexer.ReadNext()
 			break
 		}
@@ -337,9 +315,17 @@ func (p *Parser) parseArguments() []Expression {
 func (p *Parser) parseStringLiteralExpression() Expression {
 	log.Println("Parsing string literal ExpressionValue")
 	token := p.lexer.ReadNext()
-	if token.Typ != gmsl.StringToken {
+	if token.Typ != lexer.StringToken {
 		log.Panicln("Expected StringToken, got", token.String())
 	}
 
 	return &StringLiteralExpression{token: token, Value: token.Value}
+}
+
+func (p *Parser) unexpectedToken(token *lexer.Token) {
+	log.Panicln("Unexpected token", token.String())
+}
+
+func (p *Parser) unexpectedTokenExpected(expected lexer.TokenType, actual *lexer.Token) {
+	log.Panicln("Unexpected token", actual.String(), "expected", expected)
 }
