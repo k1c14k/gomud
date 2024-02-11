@@ -5,8 +5,8 @@ import (
 )
 
 func HandleLine(line string) {
-    player.Send("\r\n\"+
-        "                        Hello!\r\n"+
+    player.Send("\r\n"+
+        "\t\tHello!\r\n"+
         "\r\n" +
-        "         Let's play!\r\n")
+        "\t\t\tLet's play!\r\n")
 }

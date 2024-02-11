@@ -50,7 +50,7 @@ func (p *Parser) parseIdentifier() *Identifier {
 		log.Panicln("Expected identifier, got", token.String())
 	}
 
-	return &Identifier{token: token, Value: token.Value}
+	return &Identifier{token: token, Value: token.GetRawValue()}
 }
 
 func (p *Parser) parseImportDeclarations() []ImportDeclaration {
@@ -118,7 +118,7 @@ func (p *Parser) parseStringValue() *Identifier {
 		log.Panicln("Expected string value, got", token.String())
 	}
 
-	return &Identifier{token: token, Value: token.Value}
+	return &Identifier{token: token, Value: token.GetRawValue()}
 
 }
 
@@ -186,7 +186,7 @@ func (p *Parser) parseType() *Type {
 		log.Panicln("Expected TypeToken, got", token.String())
 	}
 
-	return &Type{token: token, Name: token.Value}
+	return &Type{token: token, Name: token.GetRawValue()}
 }
 
 func (p *Parser) parseStatements() []Statement {
@@ -319,7 +319,12 @@ func (p *Parser) parseStringLiteralExpression() Expression {
 		log.Panicln("Expected StringToken, got", token.String())
 	}
 
-	return &StringLiteralExpression{token: token, Value: token.Value}
+	valueString, err := token.GetValueString()
+	if err != nil {
+		log.Panicln("Error parsing string value", err)
+	}
+
+	return &StringLiteralExpression{token: token, Value: valueString}
 }
 
 func (p *Parser) unexpectedToken(token *lexer.Token) {

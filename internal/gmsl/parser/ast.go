@@ -164,7 +164,7 @@ func (b *BinaryExpression) GetToken() *lexer.Token {
 func (b *BinaryExpression) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("(")
-	buf.WriteString(b.token.Value)
+	buf.WriteString(b.token.GetRawValue())
 	buf.WriteString(" ")
 	buf.WriteString(b.Left.String())
 	buf.WriteString(" ")

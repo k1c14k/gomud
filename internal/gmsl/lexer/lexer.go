@@ -245,6 +245,7 @@ func parenthesisState(l *Lexer) State {
 }
 
 func stringState(l *Lexer) State {
+	lastChar := rune(0)
 	for {
 		if l.pos >= len(l.input) {
 			l.tokens <- Token{EofToken, ""}
@@ -252,16 +253,20 @@ func stringState(l *Lexer) State {
 		}
 		switch l.input[l.pos] {
 		case '"':
-			l.tokens <- Token{StringToken, l.input[l.start:l.pos]}
+			if lastChar != '\\' {
+				l.tokens <- Token{StringToken, l.input[l.start:l.pos]}
+				l.pos++
+				l.start = l.pos
+				return defaultState
+			}
 			l.pos++
-			l.start = l.pos
-			return defaultState
 		case '\r', '\n':
 			l.invalidToken()
 			return nil
 		default:
 			l.pos++
 		}
+		lastChar = rune(l.input[l.pos])
 	}
 }
 
