@@ -64,7 +64,7 @@ func (vm *VirtualMachine) Stop() {
 
 func (vm *VirtualMachine) getClass(name string) Class {
 	if _, ok := vm.classes[name]; !ok {
-		vm.classes[name] = NewClass(name)
+		vm.classes[name] = *newClass(name)
 	}
 
 	return vm.classes[name]
@@ -75,13 +75,18 @@ func (vm *VirtualMachine) execute(object Object, method string, arguments []Valu
 	for k, v := range ctxObjs {
 		ctxObjValue[k] = ObjectValue{&v}
 	}
-	ctx := NewExecutionContext(object.GetClass().GetStringPool(), ctxObjValue)
+	class := object.GetClass()
+	ctx := NewExecutionContext(class.GetStringPool(), ctxObjValue)
 	ef := NewExecutionFrame(ctx)
 
 	calleeObjectValue := *NewObjectValue(&object)
 	methodValue := NewStringValue(method)
 
-	ef.call(calleeObjectValue, methodValue, arguments)
+	for _, arg := range arguments {
+		ef.valueStack.push(arg)
+	}
+
+	ef.call(calleeObjectValue, methodValue)
 }
 
 func GetCommandChannel() chan Command {

@@ -83,20 +83,31 @@ func (ef *ExecutionFrame) GetObjectFromContext(name string) ObjectValue {
 	return ObjectValue{}
 }
 
-func (ef *ExecutionFrame) call(object ObjectValue, method Value, arguments []Value) {
+func (ef *ExecutionFrame) call(object ObjectValue, method Value) {
 	objectValue := *object.value
-	ef.nextFrame = NewExecutionFrame(ef.executionContext)
 	cls := objectValue.GetClass()
 	m := cls.GetMethod(method.(*StringValue).Value)
-	for _, a := range arguments {
-		ef.nextFrame.valueStack.push(a)
-	}
-	switch objectValue.(type) {
-	case *vmObject:
+	switch m.(type) {
+	case *vmMethod:
+		ef.nextFrame = NewExecutionFrame(ef.executionContext)
+		for i := m.GetArgumentCount() - 1; i >= 0; i-- {
+			ef.nextFrame.valueStack.push(ef.valueStack.pop())
+		}
 		ef.nextFrame.program = m.(*vmMethod).operations
 		ef.nextFrame.run()
-	default:
-		m.Execute(ef.nextFrame)
+		for i := 0; i < m.GetReturnValueCount(); i++ {
+			ef.valueStack.push(ef.nextFrame.valueStack.pop())
+		}
+		ef.nextFrame = nil
+	case *internalMethod:
+		arguments := make([]Value, m.GetArgumentCount())
+		for i := m.GetArgumentCount() - 1; i >= 0; i-- {
+			arguments[i] = ef.valueStack.pop()
+		}
+		result := m.(*internalMethod).handle(arguments)
+		for _, r := range result {
+			ef.valueStack.push(r)
+		}
 	}
 }
 

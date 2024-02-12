@@ -23,10 +23,11 @@ type FunctionContext struct {
 }
 
 type Compiler struct {
-	ast             *parser.AstNode
-	strings         []string
-	assemblyEntries []AssemblyEntry
-	methodPositions map[string]int
+	ast                  *parser.AstNode
+	strings              []string
+	assemblyEntries      []AssemblyEntry
+	methodPositions      map[string]int
+	methodArgumentCounts map[string]int
 }
 
 func NewCompiler(ast parser.AstNode) *Compiler {
@@ -35,12 +36,14 @@ func NewCompiler(ast parser.AstNode) *Compiler {
 		make([]string, 0),
 		make([]AssemblyEntry, 0),
 		make(map[string]int),
+		make(map[string]int),
 	}
 }
 
 type Assembly struct {
-	Consts  []string
-	Entries []AssemblyEntry
+	Consts               []string
+	Entries              []AssemblyEntry
+	MethodArgumentCounts map[string]int
 }
 
 func (a *Assembly) String() string {
@@ -63,7 +66,7 @@ func (a *Assembly) String() string {
 
 func (c *Compiler) Compile() *Assembly {
 	c.processNode(c.ast)
-	return &Assembly{c.strings, c.assemblyEntries}
+	return &Assembly{c.strings, c.assemblyEntries, c.methodArgumentCounts}
 }
 
 func (c *Compiler) processNode(node *parser.AstNode) {
@@ -117,6 +120,7 @@ func (c *Compiler) processFunctionDeclaration(n *parser.FunctionDeclaration) {
 	for _, a := range n.Arguments {
 		c.processArgumentDeclaration(&a, ctx)
 	}
+	c.methodArgumentCounts[n.Name.Value] = len(n.Arguments)
 	for _, s := range n.Statements {
 		c.processStatement(&s, ctx)
 	}

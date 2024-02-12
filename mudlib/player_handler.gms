@@ -9,4 +9,5 @@ func HandleLine(line string) {
         "\t\tHello!\r\n"+
         "\r\n" +
         "\t\t\tLet's play!\r\n")
+    player.Send(player.String())
 }
