@@ -30,7 +30,7 @@ func NewHandler(lineChannel chan string, lineSendingChannel chan string) *Handle
 }
 
 func newPlayerObject(lineChannel chan string) *vm.Object {
-	class := vm.NewEmptyClass("player")
+	class := vm.NewEmptyClass("<player>")
 	fromClass := vm.NewObjectFromClass(*class)
 	class.RegisterInternalMethod("Send", 1, 0, func(values []vm.Value) []vm.Value {
 		lineChannel <- values[0].(*vm.StringValue).Value
