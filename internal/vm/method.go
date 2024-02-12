@@ -66,8 +66,6 @@ func NewMethodFromAssembly(aOut *compiler.Assembly, start int) (string, Method, 
 	return name, result, pos + 1
 }
 
-func (m *vmMethod) Execute(ef *ExecutionFrame) {
-	for _, o := range m.operations {
-		o.Execute(ef)
-	}
+func (m *vmMethod) Execute(_ *ExecutionFrame) {
+	log.Panicln("Method not implemented")
 }
