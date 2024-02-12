@@ -45,7 +45,8 @@ func (o *MethodCallOperation) Execute(ef *ExecutionFrame) {
 	log.Println("Calling")
 	var object = ef.valueStack.pop()
 
-	if _, ok := object.(ObjectValue); !ok {
+	objectValue, ok := object.(ObjectValue)
+	if !ok {
 		log.Panicln("Value is not an object")
 	}
 
@@ -55,13 +56,13 @@ func (o *MethodCallOperation) Execute(ef *ExecutionFrame) {
 		log.Panicln("Value is not a method")
 	}
 
-	var arguments []Value = make([]Value, o.argumentCount)
+	var arguments = make([]Value, o.argumentCount)
 
 	for i := 0; i < o.argumentCount; i++ {
 		arguments[i] = ef.valueStack.pop()
 	}
 
-	ef.call(object, method, arguments)
+	ef.call(objectValue, method, arguments)
 	log.Println("Called", object, method, arguments)
 }
 

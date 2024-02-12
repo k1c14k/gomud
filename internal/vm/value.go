@@ -4,6 +4,7 @@ import "log"
 
 type Value interface {
 	AddValue(v Value) Value
+	String() string
 }
 
 type StringValue struct {
@@ -18,6 +19,10 @@ func (s StringValue) AddValue(v Value) Value {
 	return nil
 }
 
+func (s StringValue) String() string {
+	return s.Value
+}
+
 func NewStringValue(value string) *StringValue {
 	return &StringValue{Value: value}
 }
@@ -26,7 +31,15 @@ type ObjectValue struct {
 	value *Object
 }
 
+func NewObjectValue(value *Object) *ObjectValue {
+	return &ObjectValue{value: value}
+}
+
 func (o ObjectValue) AddValue(_ Value) Value {
 	log.Panicln("Cannot add values")
 	return nil
+}
+
+func (o ObjectValue) String() string {
+	return "Object"
 }

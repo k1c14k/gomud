@@ -55,6 +55,8 @@ type ExecutionFrame struct {
 	valueStack       ValueStack
 	executionContext ExecutionContext
 	nextFrame        *ExecutionFrame
+	programCounter   int
+	program          []Operation
 }
 
 func NewExecutionFrame(ctx ExecutionContext) *ExecutionFrame {
@@ -62,6 +64,7 @@ func NewExecutionFrame(ctx ExecutionContext) *ExecutionFrame {
 		stringRegisters:  make([]StringValue, 20),
 		valueStack:       *NewValueStack(),
 		executionContext: ctx,
+		programCounter:   0,
 	}
 }
 
@@ -80,17 +83,30 @@ func (ef *ExecutionFrame) GetObjectFromContext(name string) ObjectValue {
 	return ObjectValue{}
 }
 
-func (ef *ExecutionFrame) call(object Value, method Value, arguments []Value) {
+func (ef *ExecutionFrame) call(object ObjectValue, method Value, arguments []Value) {
+	objectValue := *object.value
 	ef.nextFrame = NewExecutionFrame(ef.executionContext)
-	obj := *object.(ObjectValue).value
-	cls := obj.GetClass()
+	cls := objectValue.GetClass()
 	m := cls.GetMethod(method.(*StringValue).Value)
 	for _, a := range arguments {
 		ef.nextFrame.valueStack.push(a)
 	}
-	m.Execute(ef.nextFrame)
+	switch objectValue.(type) {
+	case *vmObject:
+		ef.nextFrame.program = m.(*vmMethod).operations
+		ef.nextFrame.run()
+	default:
+		m.Execute(ef.nextFrame)
+	}
 }
 
 func (ef *ExecutionFrame) PopValue() Value {
 	return ef.valueStack.pop()
+}
+
+func (ef *ExecutionFrame) run() {
+	for ef.programCounter < len(ef.program) {
+		ef.program[ef.programCounter].Execute(ef)
+		ef.programCounter++
+	}
 }

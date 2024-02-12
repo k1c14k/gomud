@@ -78,12 +78,10 @@ func (vm *VirtualMachine) execute(object Object, method string, arguments []Valu
 	ctx := NewExecutionContext(object.GetClass().GetStringPool(), ctxObjValue)
 	ef := NewExecutionFrame(ctx)
 
-	for _, arg := range arguments {
-		ef.valueStack.push(arg)
-	}
+	calleeObjectValue := *NewObjectValue(&object)
+	methodValue := NewStringValue(method)
 
-	m := object.GetClass().GetMethod(method)
-	m.Execute(ef)
+	ef.call(calleeObjectValue, methodValue, arguments)
 }
 
 func GetCommandChannel() chan Command {
