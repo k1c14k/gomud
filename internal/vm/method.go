@@ -6,11 +6,38 @@ import (
 )
 
 type Method interface {
-	Execute(ef *ExecutionFrame)
+	GetArgumentCount() int
+	GetReturnValueCount() int
 }
 
 type vmMethod struct {
-	operations []Operation
+	argumentCount    int
+	returnValueCount int
+	operations       []Operation
+}
+
+type MethodHandler func([]Value) []Value
+
+type internalMethod struct {
+	argumentCount    int
+	returnValueCount int
+	handle           MethodHandler
+}
+
+func (m *internalMethod) GetArgumentCount() int {
+	return m.argumentCount
+}
+
+func (m *internalMethod) GetReturnValueCount() int {
+	return m.returnValueCount
+}
+
+func (m *vmMethod) GetArgumentCount() int {
+	return m.argumentCount
+}
+
+func (m *vmMethod) GetReturnValueCount() int {
+	return m.returnValueCount
 }
 
 func NewMethodsFromAssembly(aOut *compiler.Assembly) map[string]Method {
@@ -19,7 +46,7 @@ func NewMethodsFromAssembly(aOut *compiler.Assembly) map[string]Method {
 	start := 0
 
 	for start < len(aOut.Entries) {
-		name, method, nextStart := NewMethodFromAssembly(aOut, start)
+		name, method, nextStart := NewMethodFromAssembly(aOut, start, aOut.MethodArgumentCounts)
 		m[name] = method
 		start = nextStart
 	}
@@ -27,7 +54,7 @@ func NewMethodsFromAssembly(aOut *compiler.Assembly) map[string]Method {
 	return m
 }
 
-func NewMethodFromAssembly(aOut *compiler.Assembly, start int) (string, Method, int) {
+func NewMethodFromAssembly(aOut *compiler.Assembly, start int, counts map[string]int) (string, Method, int) {
 	pos := start
 
 	var name string
@@ -62,6 +89,8 @@ func NewMethodFromAssembly(aOut *compiler.Assembly, start int) (string, Method, 
 		}
 		pos++
 	}
+
+	result.argumentCount = counts[name]
 
 	return name, result, pos + 1
 }

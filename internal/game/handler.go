@@ -15,7 +15,7 @@ func (h Handler) handleLines() {
 	playerObject := newPlayerObject(h.lineSendingChannel)
 	for {
 		line := <-h.lineChannel
-		channel <- vm.NewMethodCallCommand(h.vmHandlerObject, "HandleLine", []vm.Value{vm.NewStringValue(line)}, map[string]vm.Object{"player": playerObject})
+		channel <- vm.NewMethodCallCommand(h.vmHandlerObject, "HandleLine", []vm.Value{vm.NewStringValue(line)}, map[string]vm.Object{"player": *playerObject})
 	}
 }
 
@@ -23,44 +23,21 @@ func NewHandler(lineChannel chan string, lineSendingChannel chan string) *Handle
 	handler := &Handler{
 		lineChannel,
 		lineSendingChannel,
-		vm.NewObject("player_handler"),
+		*vm.NewObject("player_handler"),
 	}
 	go handler.handleLines()
 	return handler
 }
 
-type playerObject struct {
-	playerClass playerClass
-}
-
-func (p playerObject) GetClass() vm.Class {
-	return p.playerClass
-}
-
-type playerClass struct {
-	playerSendMethod playerSendMethod
-}
-
-func (p playerClass) GetStringPool() []string {
-	return []string{}
-}
-
-func (p playerClass) GetMethod(_ string) vm.Method {
-	return p.playerSendMethod
-}
-
-type playerSendMethod struct {
-	lineChannel chan string
-}
-
-func (p playerSendMethod) Execute(ef *vm.ExecutionFrame) {
-	value := ef.PopValue()
-	switch value.(type) {
-	case *vm.StringValue:
-		p.lineChannel <- value.(*vm.StringValue).Value
-	}
-}
-
-func newPlayerObject(lineChannel chan string) vm.Object {
-	return playerObject{playerClass{playerSendMethod{lineChannel: lineChannel}}}
+func newPlayerObject(lineChannel chan string) *vm.Object {
+	class := vm.NewEmptyClass("<player>")
+	fromClass := vm.NewObjectFromClass(*class)
+	class.RegisterInternalMethod("Send", 1, 0, func(values []vm.Value) []vm.Value {
+		lineChannel <- values[0].(*vm.StringValue).Value
+		return []vm.Value{}
+	})
+	class.RegisterInternalMethod("String", 0, 1, func(values []vm.Value) []vm.Value {
+		return []vm.Value{vm.NewStringValue(fromClass.String())}
+	})
+	return fromClass
 }

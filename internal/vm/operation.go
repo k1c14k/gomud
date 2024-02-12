@@ -56,14 +56,8 @@ func (o *MethodCallOperation) Execute(ef *ExecutionFrame) {
 		log.Panicln("Value is not a method")
 	}
 
-	var arguments = make([]Value, o.argumentCount)
-
-	for i := 0; i < o.argumentCount; i++ {
-		arguments[i] = ef.valueStack.pop()
-	}
-
-	ef.call(objectValue, method, arguments)
-	log.Println("Called", object, method, arguments)
+	ef.call(objectValue, method)
+	log.Println("Called", object, method)
 }
 
 type AddOperation struct{}
