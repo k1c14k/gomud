@@ -19,6 +19,9 @@ const (
 	AddToken
 	MethodCallToken
 	TypeToken
+	IfToken
+	ElseToken
+	EqualToken
 )
 
 var tokenNames = map[TokenType]string{
@@ -36,6 +39,9 @@ var tokenNames = map[TokenType]string{
 	AddToken:        "AddToken",
 	MethodCallToken: "MethodCallToken",
 	TypeToken:       "TypeToken",
+	IfToken:         "IfToken",
+	ElseToken:       "ElseToken",
+	EqualToken:      "EqualToken",
 }
 
 func (t TokenType) String() string {

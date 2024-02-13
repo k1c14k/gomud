@@ -38,6 +38,7 @@ type OperationType int
 
 const (
 	OperationAdd OperationType = iota
+	OperationCompare
 )
 
 type OperationEntry struct {
@@ -49,6 +50,21 @@ type OperationEntry struct {
 type ReturnEntry struct {
 	AssemblyEntry
 	source lexer.Token
+}
+
+type JumpIfFalseEntry struct {
+	source lexer.Token
+	label  string
+}
+
+type JumpEntry struct {
+	source lexer.Token
+	label  string
+}
+
+type PushFromRegisterEntry struct {
+	Register RegisterReference
+	source   lexer.Token
 }
 
 func NewReturnEntry(source lexer.Token) AssemblyEntry {
@@ -64,7 +80,8 @@ func (r *ReturnEntry) GetSource() lexer.Token {
 }
 
 var tokenValueToOperationType = map[string]OperationType{
-	"+": OperationAdd,
+	"+":  OperationAdd,
+	"==": OperationCompare,
 }
 
 func NewOperationEntry(token lexer.Token) AssemblyEntry {
@@ -73,7 +90,8 @@ func NewOperationEntry(token lexer.Token) AssemblyEntry {
 }
 
 var operationTypeToString = map[OperationType]string{
-	OperationAdd: "ADD",
+	OperationAdd:     "ADD",
+	OperationCompare: "CMP",
 }
 
 func (o *OperationEntry) String() string {
@@ -118,4 +136,48 @@ func NewLabelEntry(label string, reference int, source lexer.Token) AssemblyEntr
 
 func NewPopToRegisterEntry(r RegisterReference, token lexer.Token) AssemblyEntry {
 	return &PopToRegisterEntry{Register: r, source: token}
+}
+
+func NewJumpIfFalseEntry(label string, source lexer.Token) AssemblyEntry {
+	return &JumpIfFalseEntry{label: label, source: source}
+}
+
+func NewJumpEntry(label string, source lexer.Token) AssemblyEntry {
+	return &JumpEntry{label: label, source: source}
+}
+
+func (j *JumpIfFalseEntry) String() string {
+	return "JMPF " + j.label
+}
+
+func (j *JumpEntry) String() string {
+	return "JMP " + j.label
+}
+
+func (j *JumpIfFalseEntry) GetSource() lexer.Token {
+	return j.source
+}
+
+func (j *JumpEntry) GetSource() lexer.Token {
+	return j.source
+}
+
+func (j *JumpIfFalseEntry) GetLabel() string {
+	return j.label
+}
+
+func (j *JumpEntry) GetLabel() string {
+	return j.label
+}
+
+func (p *PushFromRegisterEntry) String() string {
+	return "RPUSH " + registrySymbol[p.Register.Typ] + strconv.Itoa(p.Register.Index)
+}
+
+func NewPushFromRegisterEntry(register RegisterReference, source lexer.Token) AssemblyEntry {
+	return &PushFromRegisterEntry{Register: register, source: source}
+}
+
+func (p *PushFromRegisterEntry) GetSource() lexer.Token {
+	return p.source
 }

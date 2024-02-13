@@ -193,7 +193,7 @@ func (p *Parser) parseStatements() []Statement {
 	log.Println("Parsing statements")
 	token := p.lexer.ReadNext()
 	if token.Typ != lexer.OpenBraceToken {
-		log.Panicln("Expected OpenBraceToken, got", token.String())
+		p.unexpectedTokenExpected(lexer.OpenBraceToken, token)
 	}
 	statements := make([]Statement, 0)
 	for {
@@ -218,6 +218,8 @@ func (p *Parser) parseStatement() Statement {
 		default:
 			p.unexpectedToken(peeked[1])
 		}
+	} else if peeked[0].Typ == lexer.IfToken {
+		return p.parseIfStatement()
 	} else {
 		p.unexpectedToken(peeked[0])
 	}
@@ -245,29 +247,42 @@ func (p *Parser) parseExpression() Expression {
 
 	for {
 		peeked := p.lexer.PeekSome(2)
-		switch {
-		case peeked[1].Typ == lexer.MethodCallToken:
-			if !tree.CanAddLeaf() {
-				return tree.GetExpression()
-			}
-			tree.AddExpression(p.parseMethodCallExpression())
-
-		case peeked[0].Typ == lexer.StringToken:
-			if !tree.CanAddLeaf() {
-				return tree.GetExpression()
-			}
-			tree.AddExpression(p.parseStringLiteralExpression())
-		case peeked[0].Typ == lexer.AddToken:
-			if !tree.CanAddBranch() {
-				p.unexpectedToken(peeked[0])
-			}
-			tree.AddExpression(&BinaryExpression{token: p.lexer.ReadNext()})
-		case peeked[0].Typ == lexer.CloseParenToken || peeked[0].Typ == lexer.CloseBraceToken:
-			return tree.GetExpression()
-		default:
-			p.unexpectedToken(peeked[0])
+		expression, done := p.tryAddExpression(peeked, tree)
+		if done {
+			return expression
 		}
 	}
+}
+
+func (p *Parser) tryAddExpression(peeked []*lexer.Token, tree *ExpressionTree) (Expression, bool) {
+	switch {
+	case peeked[1].Typ == lexer.MethodCallToken:
+		if !tree.CanAddLeaf() {
+			return tree.GetExpression(), true
+		}
+		tree.AddExpression(p.parseMethodCallExpression())
+
+	case peeked[0].Typ == lexer.StringToken:
+		if !tree.CanAddLeaf() {
+			return tree.GetExpression(), true
+		}
+		tree.AddExpression(p.parseStringLiteralExpression())
+	case peeked[0].Typ == lexer.IdentifierToken:
+		if !tree.CanAddLeaf() {
+			return tree.GetExpression(), true
+		}
+		tree.AddExpression(p.parseIdentifierExpression())
+	case peeked[0].Typ == lexer.AddToken, peeked[0].Typ == lexer.EqualToken:
+		if !tree.CanAddBranch() {
+			p.unexpectedToken(peeked[0])
+		}
+		tree.AddExpression(&BinaryExpression{token: p.lexer.ReadNext()})
+	case !tree.CanAddLeaf():
+		return tree.GetExpression(), true
+	default:
+		p.unexpectedToken(peeked[0])
+	}
+	return nil, false
 }
 
 func (p *Parser) parseMethodCallExpression() Expression {
@@ -333,4 +348,46 @@ func (p *Parser) unexpectedToken(token *lexer.Token) {
 
 func (p *Parser) unexpectedTokenExpected(expected lexer.TokenType, actual *lexer.Token) {
 	log.Panicln("Unexpected token", actual.String(), "expected", expected)
+}
+
+func (p *Parser) parseIfStatement() Statement {
+	log.Println("Parsing if statement")
+	token := p.lexer.ReadNext()
+	if token.Typ != lexer.IfToken {
+		log.Panicln("Expected IfToken, got", token.String())
+	}
+
+	condition := p.parseExpression()
+
+	token = p.lexer.Peek()
+	if token.Typ != lexer.OpenBraceToken {
+		p.unexpectedTokenExpected(lexer.OpenBraceToken, token)
+	}
+
+	statements := p.parseStatements()
+
+	var elseStatements []Statement
+	token = p.lexer.Peek()
+	if token.Typ == lexer.ElseToken {
+		p.lexer.ReadNext() // consume the 'else' token
+
+		token = p.lexer.Peek()
+		if token.Typ != lexer.OpenBraceToken {
+			p.unexpectedTokenExpected(lexer.OpenBraceToken, token)
+		}
+
+		elseStatements = p.parseStatements()
+	}
+
+	return &IfStatement{token: token, Condition: condition, Statements: statements, ElseStatements: elseStatements}
+}
+
+func (p *Parser) parseIdentifierExpression() Expression {
+	log.Println("Parsing identifier ExpressionValue")
+	token := p.lexer.Peek()
+	if token.Typ != lexer.IdentifierToken {
+		log.Panicln("Expected IdentifierToken, got", token.String())
+	}
+
+	return &IdentifierExpression{token: token, Identifier: p.parseIdentifier()}
 }
