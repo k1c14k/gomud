@@ -102,6 +102,18 @@ type Class struct {
 	Functions []FunctionDeclaration
 }
 
+type IfStatement struct {
+	token          *lexer.Token
+	Condition      Expression
+	Statements     []Statement
+	ElseStatements []Statement
+}
+
+type IdentifierExpression struct {
+	token      *lexer.Token
+	Identifier *Identifier
+}
+
 func (c *Class) GetToken() *lexer.Token {
 	return c.token
 }
@@ -251,4 +263,36 @@ func (t *Type) GetToken() *lexer.Token {
 
 func (t *Type) String() string {
 	return t.Name
+}
+
+func (i *IfStatement) GetToken() *lexer.Token {
+	return i.token
+}
+
+func (i *IfStatement) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("(if ")
+	buf.WriteString(i.Condition.String())
+	for _, s := range i.Statements {
+		buf.WriteString(" ")
+		buf.WriteString(s.String())
+	}
+	if len(i.ElseStatements) > 0 {
+		buf.WriteString(" (else")
+		for _, s := range i.ElseStatements {
+			buf.WriteString(" ")
+			buf.WriteString(s.String())
+		}
+		buf.WriteString(")")
+	}
+	buf.WriteString(")")
+	return buf.String()
+}
+
+func (i *IdentifierExpression) GetToken() *lexer.Token {
+	return i.token
+}
+
+func (i *IdentifierExpression) String() string {
+	return i.Identifier.String()
 }

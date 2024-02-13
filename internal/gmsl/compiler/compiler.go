@@ -156,6 +156,9 @@ func (c *Compiler) processStatement(s *parser.Statement, ctx *FunctionContext) {
 	switch n := (*s).(type) {
 	case *parser.ExpressionStatement:
 		c.processExpressionStatement(n, ctx)
+	case *parser.IfStatement:
+		c.processIfStatement(n, ctx)
+
 	default:
 		log.Panicln("Unknown statement type", n.String())
 	}
@@ -195,9 +198,41 @@ func (c *Compiler) processExpression(expression *parser.Expression, ctx *Functio
 	case *parser.StringLiteralExpression:
 		c.strings = append(c.strings, (*expression).(*parser.StringLiteralExpression).Value)
 		result = append(result, NewLabelEntry(".string", len(c.strings)-1, *(*expression).(*parser.StringLiteralExpression).GetToken()))
+	case *parser.IdentifierExpression:
+		result = append(result, c.processIdentifierExpression((*expression).(*parser.IdentifierExpression), ctx))
 	default:
 		log.Panicln("Unknown expression type", (*expression).String())
 	}
 
 	return result
+}
+
+func (c *Compiler) processIfStatement(statement *parser.IfStatement, ctx *FunctionContext) {
+	// Process the condition expression
+	conditionEntries := c.processExpression(&statement.Condition, ctx)
+	c.assemblyEntries = append(c.assemblyEntries, conditionEntries...)
+	jumpLabelName := ".if_jump_" + strconv.Itoa(len(c.assemblyEntries))
+	c.assemblyEntries = append(c.assemblyEntries, NewJumpIfFalseEntry(jumpLabelName, *statement.Condition.GetToken()))
+
+	// Process the statements in the 'if' block
+	for _, s := range statement.Statements {
+		c.processStatement(&s, ctx)
+	}
+
+	jumpToEndLabelName := ".if_jump_end_" + strconv.Itoa(len(c.assemblyEntries))
+	c.assemblyEntries = append(c.assemblyEntries, NewJumpEntry(jumpToEndLabelName, *statement.GetToken()))
+	c.assemblyEntries = append(c.assemblyEntries, NewLabelEntry(jumpLabelName, len(c.assemblyEntries), *statement.GetToken()))
+
+	// Process the statements in the 'else' block, if it exists
+	if statement.ElseStatements != nil {
+		for _, s := range statement.ElseStatements {
+			c.processStatement(&s, ctx)
+		}
+	}
+
+	c.assemblyEntries = append(c.assemblyEntries, NewLabelEntry(jumpToEndLabelName, len(c.assemblyEntries), *statement.GetToken()))
+}
+
+func (c *Compiler) processIdentifierExpression(expression *parser.IdentifierExpression, ctx *FunctionContext) AssemblyEntry {
+	return NewPushFromRegisterEntry(ctx.variableToRegister[expression.Identifier.Value], *expression.GetToken())
 }
