@@ -65,11 +65,9 @@ func NewMethodFromAssembly(aOut *compiler.Assembly, start int, counts map[string
 	for pos < len(aOut.Entries) {
 		switch e := aOut.Entries[pos].(type) {
 		case *compiler.LabelEntry:
-			var eLabel = *e
-			name = processLabelEntry(aOut, eLabel, name, result, labelPos)
+			name = processLabelEntry(aOut, *e, name, result, labelPos)
 		case *compiler.PopToRegisterEntry:
-			var ePop = *e
-			processPopToRegisterEntry(ePop, result)
+			processPopToRegisterEntry(*e, result)
 		case *compiler.PushContextEntry:
 			result.operations = append(result.operations, &PushContextOperation{contextNameIndex: e.Name})
 		case *compiler.MethodCallEntry:
