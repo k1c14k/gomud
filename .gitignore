@@ -25,4 +25,4 @@
 
 # Allow mudlib and documentation files
 !doc/
-!mudlib/
+!*.gms
