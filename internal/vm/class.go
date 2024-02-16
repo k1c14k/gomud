@@ -1,33 +1,30 @@
 package vm
 
 import (
-	"goMud/internal/gmsl"
+	"bytes"
 	"goMud/internal/gmsl/compiler"
+	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
 	"log"
 	"os"
+	"strconv"
 )
 
-type Class interface {
-	GetStringPool() []string
-	GetMethod(name string) Method
-}
-
-type vmClass struct {
+type Class struct {
 	name       string
 	stringPool []string
 	methods    map[string]Method
 }
 
-func (c *vmClass) GetStringPool() []string {
+func (c *Class) GetStringPool() []string {
 	return c.stringPool
 }
 
-func (c *vmClass) GetMethod(name string) Method {
+func (c *Class) GetMethod(name string) Method {
 	return c.methods[name]
 }
 
-func NewClass(name string) Class {
+func newClass(name string) *Class {
 	log.Println("Loading class", name)
 
 	b, err := os.ReadFile("mudlib/" + name + ".gms")
@@ -35,10 +32,30 @@ func NewClass(name string) Class {
 		log.Panicln("Error reading file:", err)
 	}
 
-	l := gmsl.NewLexer(string(b))
+	l := lexer.NewLexer(string(b))
 	p := parser.NewParser(l)
 	ast := p.Parse()
 	aOut := compiler.NewCompiler(ast).Compile()
 
-	return &vmClass{name: name, stringPool: aOut.Consts, methods: NewMethodsFromAssembly(aOut)}
+	return &Class{name: name, stringPool: aOut.Consts, methods: NewMethodsFromAssembly(aOut)}
+}
+
+func NewEmptyClass(name string) *Class {
+	return &Class{name: name, stringPool: []string{}, methods: make(map[string]Method)}
+}
+
+func (c *Class) RegisterInternalMethod(name string, argumentCount int, returnValueCount int, handle MethodHandler) {
+	c.methods[name] = &internalMethod{argumentCount, returnValueCount, handle}
+
+}
+
+func (c *Class) String() string {
+	buff := bytes.NewBufferString("Class[")
+	buff.WriteString(c.name)
+	buff.WriteString(", staticStringPool=")
+	buff.WriteString(strconv.Itoa(len(c.stringPool)))
+	buff.WriteString(", methods=")
+	buff.WriteString(strconv.Itoa(len(c.methods)))
+	buff.WriteString("]")
+	return buff.String()
 }

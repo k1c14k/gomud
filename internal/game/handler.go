@@ -2,65 +2,62 @@ package game
 
 import (
 	"goMud/internal/vm"
+	"log"
 )
 
 type Handler struct {
 	lineChannel        chan string
 	lineSendingChannel chan string
 	vmHandlerObject    vm.Object
+	context            HandlerContext
 }
 
-func (h Handler) handleLines() {
+func (h *Handler) handleLines() {
 	channel := vm.GetCommandChannel()
-	playerObject := newPlayerObject(h.lineSendingChannel)
+	h.prepareContext()
+	log.Println("Handler started")
 	for {
 		line := <-h.lineChannel
-		channel <- vm.NewMethodCallCommand(h.vmHandlerObject, "HandleLine", []vm.Value{vm.NewStringValue(line)}, map[string]vm.Object{"player": playerObject})
+		channel <- vm.NewMethodCallCommand(h.vmHandlerObject, "HandleLine", []vm.Value{vm.NewStringValue(line)}, &h.context)
 	}
+}
+
+func (h *Handler) prepareContext() {
+	playerObject := h.newPlayerObject(h.lineSendingChannel)
+	h.context.setPlayer(playerObject)
+	h.context.setRoom(loadStartingLocation())
 }
 
 func NewHandler(lineChannel chan string, lineSendingChannel chan string) *Handler {
 	handler := &Handler{
 		lineChannel,
 		lineSendingChannel,
-		vm.NewObject("player_handler"),
+		*vm.NewObject("player_handler"),
+		*newHandlerContext(),
 	}
 	go handler.handleLines()
 	return handler
 }
 
-type playerObject struct {
-	playerClass playerClass
+func (h *Handler) newPlayerObject(lineChannel chan string) *vm.Object {
+	class := vm.NewEmptyClass("<player>")
+	fromClass := vm.NewObjectFromClass(*class)
+	class.RegisterInternalMethod("Send", 1, 0, func(values []vm.Value) []vm.Value {
+		lineChannel <- values[0].(*vm.StringValue).Value
+		return []vm.Value{}
+	})
+	class.RegisterInternalMethod("String", 0, 1, func(values []vm.Value) []vm.Value {
+		return []vm.Value{vm.NewStringValue(fromClass.String())}
+	})
+	class.RegisterInternalMethod("MoveTo", 1, 0, func(values []vm.Value) []vm.Value {
+		room := values[0].(*vm.StringValue).Value
+		h.context.setRoom(getOrInitializeRoom(room))
+		return []vm.Value{}
+
+	})
+	return fromClass
 }
 
-func (p playerObject) GetClass() vm.Class {
-	return p.playerClass
-}
-
-type playerClass struct {
-	playerSendMethod playerSendMethod
-}
-
-func (p playerClass) GetStringPool() []string {
-	return []string{}
-}
-
-func (p playerClass) GetMethod(_ string) vm.Method {
-	return p.playerSendMethod
-}
-
-type playerSendMethod struct {
-	lineChannel chan string
-}
-
-func (p playerSendMethod) Execute(ef *vm.ExecutionFrame) {
-	value := ef.PopValue()
-	switch value.(type) {
-	case *vm.StringValue:
-		p.lineChannel <- value.(*vm.StringValue).Value
-	}
-}
-
-func newPlayerObject(lineChannel chan string) vm.Object {
-	return playerObject{playerClass{playerSendMethod{lineChannel: lineChannel}}}
+func loadStartingLocation() *vm.Object {
+	return vm.NewObject("locations/room_a")
 }

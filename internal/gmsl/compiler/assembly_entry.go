@@ -1,57 +1,73 @@
 package compiler
 
 import (
-	"goMud/internal/gmsl"
+	"goMud/internal/gmsl/lexer"
 	"strconv"
 )
 
 type AssemblyEntry interface {
 	String() string
-	GetSource() gmsl.Token
+	GetSource() lexer.Token
 }
 
 type LabelEntry struct {
 	AssemblyEntry
 	Name   string
 	Value  int
-	source gmsl.Token
+	source lexer.Token
 }
 
 type PopToRegisterEntry struct {
 	AssemblyEntry
 	Register RegisterReference
-	source   gmsl.Token
+	source   lexer.Token
 }
 
 type PushContextEntry struct {
 	AssemblyEntry
 	Name   int
-	source gmsl.Token
+	source lexer.Token
 }
 
 type MethodCallEntry struct {
 	AssemblyEntry
-	source gmsl.Token
+	source lexer.Token
 }
 
 type OperationType int
 
 const (
 	OperationAdd OperationType = iota
+	OperationCompare
 )
 
 type OperationEntry struct {
 	AssemblyEntry
 	Operation OperationType
-	source    gmsl.Token
+	source    lexer.Token
 }
 
 type ReturnEntry struct {
 	AssemblyEntry
-	source gmsl.Token
+	source lexer.Token
 }
 
-func NewReturnEntry(source gmsl.Token) AssemblyEntry {
+type JumpIfFalseEntry struct {
+	source lexer.Token
+	label  string
+}
+
+type JumpEntry struct {
+	source lexer.Token
+	label  string
+}
+
+type PushFromRegisterEntry struct {
+	Register RegisterReference
+	source   lexer.Token
+}
+
+func NewReturnEntry(source lexer.Token) AssemblyEntry {
 	return &ReturnEntry{source: source}
 }
 
@@ -59,28 +75,30 @@ func (r *ReturnEntry) String() string {
 	return "RETURN"
 }
 
-func (r *ReturnEntry) GetSource() gmsl.Token {
+func (r *ReturnEntry) GetSource() lexer.Token {
 	return r.source
 }
 
 var tokenValueToOperationType = map[string]OperationType{
-	"+": OperationAdd,
+	"+":  OperationAdd,
+	"==": OperationCompare,
 }
 
-func NewOperationEntry(token gmsl.Token) AssemblyEntry {
-	operation := tokenValueToOperationType[token.Value]
+func NewOperationEntry(token lexer.Token) AssemblyEntry {
+	operation := tokenValueToOperationType[token.GetRawValue()]
 	return &OperationEntry{Operation: operation, source: token}
 }
 
 var operationTypeToString = map[OperationType]string{
-	OperationAdd: "ADD",
+	OperationAdd:     "ADD",
+	OperationCompare: "CMP",
 }
 
 func (o *OperationEntry) String() string {
 	return operationTypeToString[o.Operation]
 }
 
-func NewMethodCallEntry(token gmsl.Token) AssemblyEntry {
+func NewMethodCallEntry(token lexer.Token) AssemblyEntry {
 	return &MethodCallEntry{source: token}
 }
 
@@ -104,18 +122,62 @@ func (p *PushContextEntry) String() string {
 	return "CPUSH $" + strconv.Itoa(p.Name)
 }
 
-func (p *PushContextEntry) GetSource() gmsl.Token {
+func (p *PushContextEntry) GetSource() lexer.Token {
 	return p.source
 }
 
-func NewPushContextEntry(name int, source gmsl.Token) AssemblyEntry {
+func NewPushContextEntry(name int, source lexer.Token) AssemblyEntry {
 	return &PushContextEntry{Name: name, source: source}
 }
 
-func NewLabelEntry(label string, reference int, source gmsl.Token) AssemblyEntry {
+func NewLabelEntry(label string, reference int, source lexer.Token) AssemblyEntry {
 	return &LabelEntry{Name: label, Value: reference, source: source}
 }
 
-func NewPopToRegisterEntry(r RegisterReference, token gmsl.Token) AssemblyEntry {
+func NewPopToRegisterEntry(r RegisterReference, token lexer.Token) AssemblyEntry {
 	return &PopToRegisterEntry{Register: r, source: token}
+}
+
+func NewJumpIfFalseEntry(label string, source lexer.Token) AssemblyEntry {
+	return &JumpIfFalseEntry{label: label, source: source}
+}
+
+func NewJumpEntry(label string, source lexer.Token) AssemblyEntry {
+	return &JumpEntry{label: label, source: source}
+}
+
+func (j *JumpIfFalseEntry) String() string {
+	return "JMPF " + j.label
+}
+
+func (j *JumpEntry) String() string {
+	return "JMP " + j.label
+}
+
+func (j *JumpIfFalseEntry) GetSource() lexer.Token {
+	return j.source
+}
+
+func (j *JumpEntry) GetSource() lexer.Token {
+	return j.source
+}
+
+func (j *JumpIfFalseEntry) GetLabel() string {
+	return j.label
+}
+
+func (j *JumpEntry) GetLabel() string {
+	return j.label
+}
+
+func (p *PushFromRegisterEntry) String() string {
+	return "RPUSH " + registrySymbol[p.Register.Typ] + strconv.Itoa(p.Register.Index)
+}
+
+func NewPushFromRegisterEntry(register RegisterReference, source lexer.Token) AssemblyEntry {
+	return &PushFromRegisterEntry{Register: register, source: source}
+}
+
+func (p *PushFromRegisterEntry) GetSource() lexer.Token {
+	return p.source
 }

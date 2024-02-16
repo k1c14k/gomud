@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"goMud/internal/gmsl"
 	"goMud/internal/gmsl/compiler"
+	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
 	"os"
 )
@@ -16,7 +16,7 @@ func main() {
 		return
 	}
 
-	l := gmsl.NewLexer(string(b))
+	l := lexer.NewLexer(string(b))
 
 	p := parser.NewParser(l)
 	ast := p.Parse()

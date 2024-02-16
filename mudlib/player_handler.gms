@@ -1,12 +1,14 @@
 package main
 
-import (
-    "player"
-)
-
 func HandleLine(line string) {
-    player.Send("\r\n\"+
-        "                        Hello!\r\n"+
-        "\r\n" +
-        "         Let's play!\r\n");
+    if line == "north" {
+        room.TryMove("north")
+    } else {
+        if line == "south" {
+            room.TryMove("south")
+        } else {
+            player.Send("I don't understand that command.")
+        }
+    }
+    room.SendDescription()
 }
