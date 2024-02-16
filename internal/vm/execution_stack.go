@@ -8,79 +8,42 @@ const (
 	StringRegisterType RegisterType = iota
 )
 
-type ValueStack struct {
-	values  []Value
-	pos     int
-	maxSize int
-}
-
-func NewValueStack() *ValueStack {
-	maxSize := 20
-	return &ValueStack{
-		values:  make([]Value, maxSize),
-		maxSize: maxSize,
-	}
-}
-
-func (vs *ValueStack) pop() Value {
-	if vs.pos == 0 {
-		log.Panicln("ValueStack is empty")
-	}
-	vs.pos--
-	return vs.values[vs.pos]
-}
-
-func (vs *ValueStack) push(v Value) {
-	if vs.pos == vs.maxSize {
-		log.Panicln("ValueStack is full")
-	}
-	vs.values[vs.pos] = v
-	vs.pos++
-}
-
-type ExecutionContext struct {
-	stringPool    []string
-	objectContext map[string]ObjectValue
-}
-
-func NewExecutionContext(stringPool []string, objectContext map[string]ObjectValue) ExecutionContext {
-	return ExecutionContext{
-		stringPool:    stringPool,
-		objectContext: objectContext,
-	}
+type ContextProvider interface {
+	GetObjectValueFromContext(name string) *ObjectValue
 }
 
 type ExecutionFrame struct {
-	stringRegisters  []StringValue
-	valueStack       ValueStack
-	executionContext ExecutionContext
-	nextFrame        *ExecutionFrame
-	programCounter   int
-	program          []Operation
+	stringRegisters []StringValue
+	valueStack      ValueStack
+	nextFrame       *ExecutionFrame
+	programCounter  int
+	program         []Operation
+	stringPool      []string
+	contextProvider ContextProvider
 }
 
-func NewExecutionFrame(ctx ExecutionContext) *ExecutionFrame {
+func NewExecutionFrame(contextProvider ContextProvider) *ExecutionFrame {
 	return &ExecutionFrame{
-		stringRegisters:  make([]StringValue, 20),
-		valueStack:       *NewValueStack(),
-		executionContext: ctx,
-		programCounter:   0,
+		stringRegisters: make([]StringValue, 20),
+		valueStack:      *NewValueStack(),
+		programCounter:  0,
+		contextProvider: contextProvider,
 	}
 }
 
 func (ef *ExecutionFrame) GetFromStringPool(index int) string {
-	if index >= len(ef.executionContext.stringPool) {
+	if index >= len(ef.stringPool) {
 		log.Panicln("String pool index out of range")
 	}
-	return ef.executionContext.stringPool[index]
+	return ef.stringPool[index]
 }
 
 func (ef *ExecutionFrame) GetObjectFromContext(name string) ObjectValue {
-	if obj, ok := ef.executionContext.objectContext[name]; ok {
-		return obj
+	obj := ef.contextProvider.GetObjectValueFromContext(name)
+	if obj == nil {
+		log.Panicln("Object not found in context")
 	}
-	log.Panicln("Object not found in context")
-	return ObjectValue{}
+	return *obj
 }
 
 func (ef *ExecutionFrame) call(object ObjectValue, method Value) {
@@ -89,11 +52,12 @@ func (ef *ExecutionFrame) call(object ObjectValue, method Value) {
 	m := cls.GetMethod(method.(*StringValue).Value)
 	switch m.(type) {
 	case *vmMethod:
-		ef.nextFrame = NewExecutionFrame(ef.executionContext)
+		ef.nextFrame = NewExecutionFrame(ef.contextProvider)
 		for i := m.GetArgumentCount() - 1; i >= 0; i-- {
 			ef.nextFrame.valueStack.push(ef.valueStack.pop())
 		}
 		ef.nextFrame.program = m.(*vmMethod).operations
+		ef.nextFrame.stringPool = cls.GetStringPool()
 		ef.nextFrame.run()
 		for i := 0; i < m.GetReturnValueCount(); i++ {
 			ef.valueStack.push(ef.nextFrame.valueStack.pop())

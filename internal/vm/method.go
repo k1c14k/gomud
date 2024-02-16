@@ -62,9 +62,13 @@ func NewMethodFromAssembly(aOut *compiler.Assembly, start int, counts map[string
 	labelPos := make(map[string]int)
 	posRequestingLabel := make(map[int]string)
 
+forLoop:
 	for pos < len(aOut.Entries) {
 		switch e := aOut.Entries[pos].(type) {
 		case *compiler.LabelEntry:
+			if e.Name == ".function_name" && name != "" {
+				break forLoop
+			}
 			name = processLabelEntry(aOut, *e, name, result, labelPos)
 		case *compiler.PopToRegisterEntry:
 			processPopToRegisterEntry(*e, result)
@@ -101,7 +105,7 @@ func NewMethodFromAssembly(aOut *compiler.Assembly, start int, counts map[string
 
 	result.argumentCount = counts[name]
 
-	return name, result, pos + 1
+	return name, result, pos
 }
 
 func processPushFromRegister(e compiler.PushFromRegisterEntry, result *vmMethod) {
