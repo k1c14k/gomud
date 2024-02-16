@@ -51,7 +51,7 @@ func (h *Handler) newPlayerObject(lineChannel chan string) *vm.Object {
 	})
 	class.RegisterInternalMethod("MoveTo", 1, 0, func(values []vm.Value) []vm.Value {
 		room := values[0].(*vm.StringValue).Value
-		h.context.setRoom(vm.NewObject(room))
+		h.context.setRoom(getOrInitializeRoom(room))
 		return []vm.Value{}
 
 	})
