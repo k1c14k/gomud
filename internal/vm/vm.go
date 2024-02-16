@@ -9,23 +9,23 @@ type Command interface {
 type StopCommand struct{}
 
 type MethodCallCommand struct {
-	object    Object
-	method    string
-	arguments []Value
-	context   map[string]Object
+	object          Object
+	method          string
+	arguments       []Value
+	contextProvider ContextProvider
 }
 
-func NewMethodCallCommand(object Object, method string, arguments []Value, context map[string]Object) *MethodCallCommand {
+func NewMethodCallCommand(object Object, method string, arguments []Value, contextProvider ContextProvider) *MethodCallCommand {
 	return &MethodCallCommand{
-		object:    object,
-		method:    method,
-		arguments: arguments,
-		context:   context,
+		object:          object,
+		method:          method,
+		arguments:       arguments,
+		contextProvider: contextProvider,
 	}
 }
 
 func (c *MethodCallCommand) Handle(vm *VirtualMachine) {
-	vm.execute(c.object, c.method, c.arguments, c.context)
+	vm.execute(c.object, c.method, c.arguments, c.contextProvider)
 }
 
 func (c *StopCommand) Handle(vm *VirtualMachine) {
@@ -70,14 +70,8 @@ func (vm *VirtualMachine) getClass(name string) Class {
 	return vm.classes[name]
 }
 
-func (vm *VirtualMachine) execute(object Object, method string, arguments []Value, ctxObjs map[string]Object) {
-	var ctxObjValue = make(map[string]ObjectValue)
-	for k, v := range ctxObjs {
-		ctxObjValue[k] = ObjectValue{&v}
-	}
-	class := object.GetClass()
-	ctx := NewExecutionContext(class.GetStringPool(), ctxObjValue)
-	ef := NewExecutionFrame(ctx)
+func (vm *VirtualMachine) execute(object Object, method string, arguments []Value, contextProvider ContextProvider) {
+	ef := NewExecutionFrame(contextProvider)
 
 	calleeObjectValue := *NewObjectValue(&object)
 	methodValue := NewStringValue(method)
