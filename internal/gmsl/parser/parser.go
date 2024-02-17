@@ -25,7 +25,7 @@ func (p *Parser) parseClass() *Class {
 	}
 
 	name := p.parseIdentifier()
-	class := Class{token: token, Name: name, Imports: make([]ImportDeclaration, 0)}
+	class := newClass(name, token)
 	for {
 		peeked := p.lexer.Peek()
 		switch peeked.Typ {
@@ -36,7 +36,7 @@ func (p *Parser) parseClass() *Class {
 			functions := p.parseFunctionDeclarations()
 			class.Functions = append(class.Functions, functions...)
 		case lexer.EofToken:
-			return &class
+			return class
 		default:
 			p.unexpectedToken(peeked)
 		}
@@ -50,7 +50,7 @@ func (p *Parser) parseIdentifier() *Identifier {
 		log.Panicln("Expected identifier, got", token.String())
 	}
 
-	return &Identifier{token: token, Value: token.GetRawValue()}
+	return newIdentifier(token)
 }
 
 func (p *Parser) parseImportDeclarations() []ImportDeclaration {
@@ -88,13 +88,13 @@ func (p *Parser) parseSingleImportDeclaration() ImportDeclaration {
 	token := p.lexer.ReadNext()
 	name := p.parseStringValue()
 
-	return &SingleImportDeclaration{token: token, Name: name}
+	return newSingleImportDeclaration(name, token)
 }
 
 func (p *Parser) parseImportDeclarationList() ImportDeclaration {
 	log.Println("Parsing import declaration list")
 	token := p.lexer.ReadNext()
-	imports := make([]*Identifier, 0)
+	imports := make([]Identifier, 0)
 	skip := p.lexer.ReadNext()
 	if skip.Typ != lexer.OpenParenToken {
 		p.unexpectedTokenExpected(lexer.OpenParenToken, skip)
@@ -105,10 +105,10 @@ func (p *Parser) parseImportDeclarationList() ImportDeclaration {
 			p.lexer.ReadNext()
 			break
 		}
-		imports = append(imports, p.parseStringValue())
+		imports = append(imports, *p.parseStringValue())
 	}
 
-	return &ImportDeclarationList{token: token, Imports: imports}
+	return newImportDeclarationList(&imports, token)
 }
 
 func (p *Parser) parseStringValue() *Identifier {
@@ -118,7 +118,7 @@ func (p *Parser) parseStringValue() *Identifier {
 		log.Panicln("Expected string value, got", token.String())
 	}
 
-	return &Identifier{token: token, Value: token.GetRawValue()}
+	return newIdentifier(token)
 
 }
 
@@ -147,8 +147,8 @@ func (p *Parser) parseFunctionDeclaration() FunctionDeclaration {
 	arguments := p.parseArgumentDeclarations()
 	statements := p.parseStatements()
 
-	declaration := FunctionDeclaration{token: token, Name: name, Arguments: arguments, Statements: statements}
-	return declaration
+	declaration := newFunctionDeclaration(name, &arguments, &statements, token)
+	return *declaration
 }
 
 func (p *Parser) parseArgumentDeclarations() []ArgumentDeclaration {
@@ -176,7 +176,7 @@ func (p *Parser) parseArgumentDeclaration() ArgumentDeclaration {
 	log.Println("Parsing argument")
 	name := p.parseIdentifier()
 	typ := p.parseType()
-	return ArgumentDeclaration{token: name.token, Name: name, Typ: typ}
+	return *newArgumentDeclaration(name, typ, name.token)
 }
 
 func (p *Parser) parseType() *Type {
@@ -186,7 +186,7 @@ func (p *Parser) parseType() *Type {
 		log.Panicln("Expected TypeToken, got", token.String())
 	}
 
-	return &Type{token: token, Name: token.GetRawValue()}
+	return newType(token)
 }
 
 func (p *Parser) parseStatements() []Statement {
@@ -229,7 +229,8 @@ func (p *Parser) parseStatement() Statement {
 func (p *Parser) parseExpressionStatement() Statement {
 	log.Println("Parsing ExpressionValue statement")
 	token := p.lexer.Peek()
-	return &ExpressionStatement{token: token, ExpressionValue: p.parseExpression()}
+	expression := p.parseExpression()
+	return newExpressionStatement(&expression, token)
 }
 
 func (p *Parser) parseExpression() Expression {
@@ -276,7 +277,7 @@ func (p *Parser) tryAddExpression(peeked []*lexer.Token, tree *ExpressionTree) (
 		if !tree.CanAddBranch() {
 			p.unexpectedToken(peeked[0])
 		}
-		tree.AddExpression(&BinaryExpression{token: p.lexer.ReadNext()})
+		tree.AddExpression(newBinaryExpression(p.lexer.ReadNext()))
 	case !tree.CanAddLeaf():
 		return tree.GetExpression(), true
 	default:
@@ -287,23 +288,21 @@ func (p *Parser) tryAddExpression(peeked []*lexer.Token, tree *ExpressionTree) (
 
 func (p *Parser) parseMethodCallExpression() Expression {
 	log.Println("Parsing method call ExpressionValue")
-	var result MethodCallExpression
 	token := p.lexer.Peek()
 	if token.Typ != lexer.IdentifierToken {
 		log.Panicln("Expected IdentifierToken, got", token.String())
 	}
 
-	result.ObjectName = p.parseIdentifier()
+	objectName := p.parseIdentifier()
 
 	token = p.lexer.ReadNext()
 	if token.Typ != lexer.MethodCallToken {
 		log.Panicln("Expected MethodCallToken, got", token.String())
 	}
-	result.token = token
-	result.MethodName = p.parseIdentifier()
-	result.Arguments = p.parseArguments()
+	methodName := p.parseIdentifier()
+	arguments := p.parseArguments()
 
-	return &result
+	return newMethodCallExpression(objectName, methodName, &arguments, token)
 }
 
 func (p *Parser) parseArguments() []Expression {
@@ -334,12 +333,7 @@ func (p *Parser) parseStringLiteralExpression() Expression {
 		log.Panicln("Expected StringToken, got", token.String())
 	}
 
-	valueString, err := token.GetValueString()
-	if err != nil {
-		log.Panicln("Error parsing string value", err)
-	}
-
-	return &StringLiteralExpression{token: token, Value: valueString}
+	return newStringLiteralExpression(token)
 }
 
 func (p *Parser) unexpectedToken(token *lexer.Token) {
@@ -379,7 +373,7 @@ func (p *Parser) parseIfStatement() Statement {
 		elseStatements = p.parseStatements()
 	}
 
-	return &IfStatement{token: token, Condition: condition, Statements: statements, ElseStatements: elseStatements}
+	return newIfStatement(&condition, &statements, &elseStatements, token)
 }
 
 func (p *Parser) parseIdentifierExpression() Expression {
@@ -389,5 +383,5 @@ func (p *Parser) parseIdentifierExpression() Expression {
 		log.Panicln("Expected IdentifierToken, got", token.String())
 	}
 
-	return &IdentifierExpression{token: token, Identifier: p.parseIdentifier()}
+	return newIdentifierExpression(p.parseIdentifier(), token)
 }
