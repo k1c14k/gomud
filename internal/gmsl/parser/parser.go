@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"goMud/internal/gmsl/lexer"
 	"log"
 )
@@ -14,7 +15,9 @@ func NewParser(l *lexer.Lexer) *Parser {
 }
 
 func (p *Parser) Parse() *Class {
-	return p.parseClass()
+	class := p.parseClass()
+	fmt.Println(class.PrettyPrint(0))
+	return class
 }
 
 func (p *Parser) parseClass() *Class {

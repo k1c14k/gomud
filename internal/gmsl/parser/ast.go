@@ -8,6 +8,7 @@ import (
 type AstNode interface {
 	GetToken() *lexer.Token
 	String() string
+	PrettyPrint(tabs int) string
 }
 
 type Identifier struct {
