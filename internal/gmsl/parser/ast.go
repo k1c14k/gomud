@@ -8,10 +8,10 @@ import (
 type AstNode interface {
 	GetToken() *lexer.Token
 	String() string
+	PrettyPrint(tabs int) string
 }
 
 type Identifier struct {
-	AstNode
 	token *lexer.Token
 	Value string
 }
@@ -21,30 +21,24 @@ type ImportDeclaration interface {
 }
 
 type SingleImportDeclaration struct {
-	AstNode
-	ImportDeclaration
 	token *lexer.Token
-	Name  *Identifier
+	Name  Identifier
 }
 
 type ImportDeclarationList struct {
-	AstNode
-	ImportDeclaration
 	token   *lexer.Token
-	Imports []*Identifier
+	Imports []Identifier
 }
 
 type Type struct {
-	AstNode
 	token *lexer.Token
 	Name  string
 }
 
 type ArgumentDeclaration struct {
-	AstNode
 	token *lexer.Token
-	Name  *Identifier
-	Typ   *Type
+	Name  Identifier
+	Typ   Type
 }
 
 type Statement interface {
@@ -56,48 +50,38 @@ type Expression interface {
 }
 
 type BinaryExpression struct {
-	AstNode
-	Expression
 	token *lexer.Token
 	Left  Expression
 	Right Expression
 }
 
 type StringLiteralExpression struct {
-	AstNode
-	Expression
 	token *lexer.Token
 	Value string
 }
 
 type MethodCallExpression struct {
-	AstNode
-	Expression
 	token      *lexer.Token
-	ObjectName *Identifier
-	MethodName *Identifier
+	ObjectName Identifier
+	MethodName Identifier
 	Arguments  []Expression
 }
 
 type ExpressionStatement struct {
-	AstNode
-	Expression
 	token           *lexer.Token
 	ExpressionValue Expression
 }
 
 type FunctionDeclaration struct {
-	AstNode
 	token      *lexer.Token
-	Name       *Identifier
+	Name       Identifier
 	Arguments  []ArgumentDeclaration
 	Statements []Statement
 }
 
 type Class struct {
-	AstNode
 	token     *lexer.Token
-	Name      *Identifier
+	Name      Identifier
 	Imports   []ImportDeclaration
 	Functions []FunctionDeclaration
 }
@@ -111,7 +95,7 @@ type IfStatement struct {
 
 type IdentifierExpression struct {
 	token      *lexer.Token
-	Identifier *Identifier
+	Identifier Identifier
 }
 
 func (c *Class) GetToken() *lexer.Token {
