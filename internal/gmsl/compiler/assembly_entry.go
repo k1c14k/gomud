@@ -19,7 +19,7 @@ type LabelEntry struct {
 
 type PopToRegisterEntry struct {
 	AssemblyEntry
-	Register RegisterReference
+	Register int
 	source   lexer.Token
 }
 
@@ -63,7 +63,7 @@ type JumpEntry struct {
 }
 
 type PushFromRegisterEntry struct {
-	Register RegisterReference
+	Register int
 	source   lexer.Token
 }
 
@@ -110,12 +110,8 @@ func (l *LabelEntry) String() string {
 	return l.Name + " $" + strconv.Itoa(l.Value)
 }
 
-var registrySymbol = map[RegisterType]string{
-	StringRegister: "S",
-}
-
 func (p *PopToRegisterEntry) String() string {
-	return "RPOP " + registrySymbol[p.Register.Typ] + strconv.Itoa(p.Register.Index)
+	return "RPOP " + strconv.Itoa(p.Register)
 }
 
 func (p *PushContextEntry) String() string {
@@ -134,7 +130,7 @@ func NewLabelEntry(label string, reference int, source lexer.Token) AssemblyEntr
 	return &LabelEntry{Name: label, Value: reference, source: source}
 }
 
-func NewPopToRegisterEntry(r RegisterReference, token lexer.Token) AssemblyEntry {
+func NewPopToRegisterEntry(r int, token lexer.Token) AssemblyEntry {
 	return &PopToRegisterEntry{Register: r, source: token}
 }
 
@@ -171,10 +167,10 @@ func (j *JumpEntry) GetLabel() string {
 }
 
 func (p *PushFromRegisterEntry) String() string {
-	return "RPUSH " + registrySymbol[p.Register.Typ] + strconv.Itoa(p.Register.Index)
+	return "RPUSH " + strconv.Itoa(p.Register)
 }
 
-func NewPushFromRegisterEntry(register RegisterReference, source lexer.Token) AssemblyEntry {
+func NewPushFromRegisterEntry(register int, source lexer.Token) AssemblyEntry {
 	return &PushFromRegisterEntry{Register: register, source: source}
 }
 

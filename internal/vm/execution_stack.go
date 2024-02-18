@@ -57,7 +57,7 @@ func (ef *ExecutionFrame) call(object ObjectValue, method Value) {
 			ef.nextFrame.valueStack.push(ef.valueStack.pop())
 		}
 		ef.nextFrame.program = m.(*vmMethod).operations
-		ef.nextFrame.stringPool = cls.GetStringPool()
+		ef.nextFrame.stringPool = m.(*vmMethod).GetStrings()
 		ef.nextFrame.run()
 		for i := 0; i < m.GetReturnValueCount(); i++ {
 			ef.valueStack.push(ef.nextFrame.valueStack.pop())
