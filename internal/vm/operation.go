@@ -50,7 +50,6 @@ func (o *PushContextOperation) String() string {
 }
 
 type MethodCallOperation struct {
-	argumentCount int
 }
 
 func (o *MethodCallOperation) Execute(ef *ExecutionFrame) {
@@ -73,7 +72,7 @@ func (o *MethodCallOperation) Execute(ef *ExecutionFrame) {
 }
 
 func (o *MethodCallOperation) String() string {
-	return "CALL " + strconv.Itoa(o.argumentCount)
+	return "CALL"
 }
 
 type AddOperation struct{}

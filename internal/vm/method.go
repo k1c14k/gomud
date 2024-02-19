@@ -69,7 +69,7 @@ func NewMethodFromAssembly(f compiler.FunctionInfo) Method {
 		case compiler.OpCmp:
 			result.addOperation(&EqualOperation{})
 		case compiler.OpCall:
-			result.addOperation(&MethodCallOperation{argumentCount: 1})
+			result.addOperation(&MethodCallOperation{})
 		case compiler.OpPushContext:
 			result.addOperation(&PushContextOperation{contextNameIndex: e.GetArgument()})
 		case compiler.OpPopToRegister:
