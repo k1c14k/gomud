@@ -214,18 +214,26 @@ func (p *Parser) parseStatement() Statement {
 	log.Println("Parsing statement")
 	peeked := p.lexer.PeekSome(2)
 
-	if peeked[0].Typ == lexer.IdentifierToken {
+	switch peeked[0].Typ {
+	case lexer.VarToken:
+		return p.parseVariableDeclarationStatement()
+	case lexer.IdentifierToken:
 		switch peeked[1].Typ {
+		case lexer.AssignToken:
+			return p.parseVariableAssignmentStatement()
+		case lexer.CreateAndAssignToken:
+			return p.parseVariableCreateAndAssignStatement()
 		case lexer.MethodCallToken:
 			return p.parseExpressionStatement()
 		default:
 			p.unexpectedToken(peeked[1])
 		}
-	} else if peeked[0].Typ == lexer.IfToken {
+	case lexer.IfToken:
 		return p.parseIfStatement()
-	} else {
+	default:
 		p.unexpectedToken(peeked[0])
 	}
+
 	return nil
 }
 
@@ -292,9 +300,7 @@ func (p *Parser) tryAddExpression(peeked []*lexer.Token, tree *ExpressionTree) (
 func (p *Parser) parseMethodCallExpression() Expression {
 	log.Println("Parsing method call ExpressionValue")
 	token := p.lexer.Peek()
-	if token.Typ != lexer.IdentifierToken {
-		log.Panicln("Expected IdentifierToken, got", token.String())
-	}
+	p.unexpectedTokenExpected(lexer.IdentifierToken, token)
 
 	objectName := p.parseIdentifier()
 
@@ -344,7 +350,9 @@ func (p *Parser) unexpectedToken(token *lexer.Token) {
 }
 
 func (p *Parser) unexpectedTokenExpected(expected lexer.TokenType, actual *lexer.Token) {
-	log.Panicln("Unexpected token", actual.String(), "expected", expected)
+	if actual.Typ != expected {
+		log.Panicln("Unexpected token", actual.String(), "expected", expected)
+	}
 }
 
 func (p *Parser) parseIfStatement() Statement {
@@ -382,9 +390,54 @@ func (p *Parser) parseIfStatement() Statement {
 func (p *Parser) parseIdentifierExpression() Expression {
 	log.Println("Parsing identifier ExpressionValue")
 	token := p.lexer.Peek()
-	if token.Typ != lexer.IdentifierToken {
-		log.Panicln("Expected IdentifierToken, got", token.String())
-	}
+	p.unexpectedTokenExpected(lexer.IdentifierToken, token)
 
 	return newIdentifierExpression(p.parseIdentifier(), token)
+}
+
+func (p *Parser) parseVariableDeclarationStatement() Statement {
+	log.Println("Parsing variable declaration statement")
+	token := p.lexer.ReadNext()
+	if token.Typ != lexer.VarToken {
+		log.Panicln("Expected VarToken, got", token.String())
+	}
+
+	name := p.parseIdentifier()
+	typ := p.parseType()
+
+	return newVariableDeclarationStatement(name, typ, token)
+}
+
+func (p *Parser) parseVariableAssignmentStatement() Statement {
+	log.Println("Parsing variable assignment statement")
+	token := p.lexer.Peek()
+	p.unexpectedTokenExpected(lexer.IdentifierToken, token)
+
+	name := p.parseIdentifier()
+	token = p.expect(lexer.AssignToken, "AssignToken")
+	expression := p.parseExpression()
+
+	return newVariableAssignmentStatement(name, &expression, token)
+}
+
+func (p *Parser) parseVariableCreateAndAssignStatement() Statement {
+	log.Println("Parsing variable create and assign statement")
+	token := p.lexer.Peek()
+	if token.Typ != lexer.IdentifierToken {
+		p.unexpectedTokenExpected(lexer.IdentifierToken, token)
+	}
+
+	name := p.parseIdentifier()
+	token = p.expect(lexer.CreateAndAssignToken, "CreateAndAssignToken")
+	expression := p.parseExpression()
+
+	return newVariableCreateAndAssignStatement(name, &expression, token)
+}
+
+func (p *Parser) expect(token lexer.TokenType, s string) *lexer.Token {
+	read := p.lexer.ReadNext()
+	if token != read.Typ {
+		log.Panicln("Expected", s, "got", token.String())
+	}
+	return read
 }

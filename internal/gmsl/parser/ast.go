@@ -98,6 +98,103 @@ type IdentifierExpression struct {
 	Identifier Identifier
 }
 
+type VariableDeclarationStatement struct {
+	token *lexer.Token
+	name  Identifier
+	typ   Type
+}
+
+func (v *VariableDeclarationStatement) GetToken() *lexer.Token {
+	return v.token
+}
+
+func (v *VariableDeclarationStatement) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("(var ")
+	buf.WriteString(v.name.String())
+	buf.WriteString(" ")
+	buf.WriteString(v.typ.String())
+	buf.WriteString(")")
+	return buf.String()
+}
+
+func (v *VariableDeclarationStatement) PrettyPrint(tabs int) string {
+	var buf bytes.Buffer
+	for i := 0; i < tabs; i++ {
+		buf.WriteString("\t")
+	}
+	buf.WriteString("var ")
+	buf.WriteString(v.name.String())
+	buf.WriteString(" ")
+	buf.WriteString(v.typ.String())
+	buf.WriteString("\n")
+	return buf.String()
+}
+
+type VariableAssignmentStatement struct {
+	token *lexer.Token
+	name  Identifier
+	value Expression
+}
+
+func (v *VariableAssignmentStatement) GetToken() *lexer.Token {
+	return v.token
+}
+
+func (v *VariableAssignmentStatement) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("(assign ")
+	buf.WriteString(v.name.String())
+	buf.WriteString(" ")
+	buf.WriteString(v.value.String())
+	buf.WriteString(")")
+	return buf.String()
+}
+
+func (v *VariableAssignmentStatement) PrettyPrint(tabs int) string {
+	var buf bytes.Buffer
+	for i := 0; i < tabs; i++ {
+		buf.WriteString("\t")
+	}
+	buf.WriteString(v.name.String())
+	buf.WriteString(" = ")
+	buf.WriteString(v.value.String())
+	buf.WriteString("\n")
+	return buf.String()
+}
+
+type VariableCreateAndAssignStatement struct {
+	token *lexer.Token
+	name  Identifier
+	value Expression
+}
+
+func (v *VariableCreateAndAssignStatement) GetToken() *lexer.Token {
+	return v.token
+}
+
+func (v *VariableCreateAndAssignStatement) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("(create-and-assign ")
+	buf.WriteString(v.name.String())
+	buf.WriteString(" ")
+	buf.WriteString(v.value.String())
+	buf.WriteString(")")
+	return buf.String()
+}
+
+func (v *VariableCreateAndAssignStatement) PrettyPrint(tabs int) string {
+	var buf bytes.Buffer
+	for i := 0; i < tabs; i++ {
+		buf.WriteString("\t")
+	}
+	buf.WriteString(v.name.String())
+	buf.WriteString(" := ")
+	buf.WriteString(v.value.String())
+	buf.WriteString("\n")
+	return buf.String()
+}
+
 func (c *Class) GetToken() *lexer.Token {
 	return c.token
 }
