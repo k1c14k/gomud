@@ -58,35 +58,34 @@ func NewMethodFromAssembly(f compiler.FunctionInfo) Method {
 	posRequestingLabel := make(map[int]string)
 
 	for _, e := range f.GetEntries() {
-		switch e.(type) {
-		case *compiler.LabelEntry:
-			switch e.(*compiler.LabelEntry).Name {
-			case string(compiler.StringLabel), string(compiler.MethodNameLabel), string(compiler.ObjectNameLabel):
-				result.addOperation(&PushStringOperation{index: e.(*compiler.LabelEntry).Value})
-			default:
-				labelPos[e.(*compiler.LabelEntry).Name] = len(result.operations) - 1
-			}
-		case *compiler.PopToRegisterEntry:
-			result.addOperation(&PopToRegisterOperation{registerType: StringRegisterType, index: e.(*compiler.PopToRegisterEntry).Register})
-		case *compiler.PushContextEntry:
-			result.addOperation(&PushContextOperation{contextNameIndex: e.(*compiler.PushContextEntry).Name})
-		case *compiler.MethodCallEntry:
+		if e.GetLabel() != nil {
+			labelPos[*e.GetLabel()] = len(result.operations)
+		}
+		switch e.GetOpCode() {
+		case compiler.OpReturn:
+			result.addOperation(&ReturnOperation{})
+		case compiler.OpAdd:
+			result.addOperation(&AddOperation{})
+		case compiler.OpCmp:
+			result.addOperation(&EqualOperation{})
+		case compiler.OpCall:
 			result.addOperation(&MethodCallOperation{argumentCount: 1})
-		case *compiler.OperationEntry:
-			switch e.(*compiler.OperationEntry).Operation {
-			case compiler.OperationAdd:
-				result.addOperation(&AddOperation{})
-			case compiler.OperationCompare:
-				result.addOperation(&EqualOperation{})
-			}
-		case *compiler.JumpIfFalseEntry:
-			posRequestingLabel[len(result.operations)] = e.(*compiler.JumpIfFalseEntry).GetLabel()
+		case compiler.OpPushContext:
+			result.addOperation(&PushContextOperation{contextNameIndex: e.GetArgument()})
+		case compiler.OpPopToRegister:
+			result.addOperation(&PopToRegisterOperation{registerType: StringRegisterType, index: e.GetArgument()})
+		case compiler.OpJumpIfFalse:
+			posRequestingLabel[len(result.operations)] = *e.GetTargetLabel()
 			result.addOperation(&JumpIfFalseOperation{})
-		case *compiler.JumpEntry:
-			posRequestingLabel[len(result.operations)] = e.(*compiler.JumpEntry).GetLabel()
+		case compiler.OpJump:
+			posRequestingLabel[len(result.operations)] = *e.GetTargetLabel()
 			result.addOperation(&JumpOperation{})
-		case *compiler.PushFromRegisterEntry:
-			result.addOperation(&PushFromRegisterOperation{registerType: StringRegisterType, index: e.(*compiler.PushFromRegisterEntry).Register})
+		case compiler.OpPushFromRegister:
+			result.addOperation(&PushFromRegisterOperation{registerType: StringRegisterType, index: e.GetArgument()})
+		case compiler.OpPushString:
+			result.addOperation(&PushStringOperation{index: e.GetArgument()})
+		case compiler.OpNoOp:
+			// Do nothing
 		}
 	}
 

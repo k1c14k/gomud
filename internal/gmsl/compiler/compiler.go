@@ -50,7 +50,7 @@ func (c *Compiler) processFunctionDeclaration(n *parser.FunctionDeclaration) *Fu
 	for _, s := range n.Statements {
 		c.processStatement(&s, result)
 	}
-	result.addEntry(NewReturnEntry(*n.GetToken()))
+	result.addEntry(*NewReturnEntry(nil, *n.GetToken()))
 	return result
 }
 
@@ -60,7 +60,7 @@ var typToType = map[string]Type{
 
 func (c *Compiler) processArgumentDeclaration(argumentDeclaration *parser.ArgumentDeclaration, function *FunctionInfo) {
 	function.addArgument(argumentDeclaration.Name.Value, typToType[argumentDeclaration.Typ.Name])
-	function.addEntry(NewPopToRegisterEntry(function.getRegisterOf(argumentDeclaration.Name.Value), *argumentDeclaration.GetToken()))
+	function.addEntry(*NewPopToRegisterEntry(nil, function.getRegisterOf(argumentDeclaration.Name.Value), *argumentDeclaration.GetToken()))
 }
 
 func (c *Compiler) processStatement(s *parser.Statement, f *FunctionInfo) {
@@ -83,14 +83,6 @@ func isContextName(name string) bool {
 	return name == "player" || name == "room" || name == "item"
 }
 
-type LabelNames string
-
-const (
-	MethodNameLabel LabelNames = ".method_name"
-	ObjectNameLabel LabelNames = ".object_name"
-	StringLabel     LabelNames = ".string"
-)
-
 func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionInfo) []AssemblyEntry {
 	var result []AssemblyEntry
 	switch (*expression).(type) {
@@ -100,23 +92,23 @@ func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionI
 		}
 		methodName := (*expression).(*parser.MethodCallExpression).MethodName
 		nameIdx := f.addString(methodName.Value)
-		result = append(result, NewLabelEntry(string(MethodNameLabel), nameIdx, *methodName.GetToken()))
+		result = append(result, *NewPushStringEntry(nil, nameIdx, *methodName.GetToken()))
 		objectName := (*expression).(*parser.MethodCallExpression).ObjectName
 		objectIdx := f.addString(objectName.Value)
 		if isContextName(objectName.Value) {
-			result = append(result, NewPushContextEntry(objectIdx, *objectName.GetToken()))
+			result = append(result, *NewPushContextEntry(nil, objectIdx, *objectName.GetToken()))
 		} else {
-			result = append(result, NewLabelEntry(string(ObjectNameLabel), objectIdx, *objectName.GetToken()))
+			result = append(result, *NewPushStringEntry(nil, objectIdx, *objectName.GetToken()))
 		}
 		n := (*expression).(*parser.MethodCallExpression).GetToken()
-		result = append(result, NewMethodCallEntry(*n))
+		result = append(result, *NewCallEntry(nil, *n))
 	case *parser.BinaryExpression:
 		result = append(result, c.processExpression(&(*expression).(*parser.BinaryExpression).Left, f)...)
 		result = append(result, c.processExpression(&(*expression).(*parser.BinaryExpression).Right, f)...)
-		result = append(result, NewOperationEntry(*(*expression).(*parser.BinaryExpression).GetToken()))
+		result = append(result, *NewOperationEntry(nil, *(*expression).(*parser.BinaryExpression).GetToken()))
 	case *parser.StringLiteralExpression:
 		stringIdx := f.addString((*expression).(*parser.StringLiteralExpression).Value)
-		result = append(result, NewLabelEntry(string(StringLabel), stringIdx, *(*expression).(*parser.StringLiteralExpression).GetToken()))
+		result = append(result, *NewPushStringEntry(nil, stringIdx, *(*expression).(*parser.StringLiteralExpression).GetToken()))
 	case *parser.IdentifierExpression:
 		result = append(result, c.processIdentifierExpression((*expression).(*parser.IdentifierExpression), f))
 	default:
@@ -130,7 +122,7 @@ func (c *Compiler) processIfStatement(statement *parser.IfStatement, f *Function
 	// Process the condition expression
 	f.addEntries(c.processExpression(&statement.Condition, f))
 	jumpLabelName := ".if_jump_" + strconv.Itoa(f.nextEntryPost())
-	f.addEntry(NewJumpIfFalseEntry(jumpLabelName, *statement.Condition.GetToken()))
+	f.addEntry(*NewJumpIfFalseEntry(nil, jumpLabelName, *statement.GetToken()))
 
 	// Process the statements in the 'if' block
 	for _, s := range statement.Statements {
@@ -138,8 +130,8 @@ func (c *Compiler) processIfStatement(statement *parser.IfStatement, f *Function
 	}
 
 	jumpToEndLabelName := ".if_jump_end_" + strconv.Itoa(f.nextEntryPost())
-	f.addEntry(NewJumpEntry(jumpToEndLabelName, *statement.GetToken()))
-	f.addEntry(NewLabelEntry(jumpLabelName, f.nextEntryPost(), *statement.GetToken()))
+	f.addEntry(*NewJumpEntry(nil, jumpToEndLabelName, *statement.GetToken()))
+	f.setNextLabel(&jumpLabelName)
 
 	// Process the statements in the 'else' block, if it exists
 	if statement.ElseStatements != nil {
@@ -148,9 +140,10 @@ func (c *Compiler) processIfStatement(statement *parser.IfStatement, f *Function
 		}
 	}
 
-	f.addEntry(NewLabelEntry(jumpToEndLabelName, f.nextEntryPost(), *statement.GetToken()))
+	f.setNextLabel(&jumpToEndLabelName)
+	f.addEntry(*NewNoOpEntry(nil, *statement.GetToken()))
 }
 
 func (c *Compiler) processIdentifierExpression(expression *parser.IdentifierExpression, f *FunctionInfo) AssemblyEntry {
-	return NewPushFromRegisterEntry(f.getRegisterOf(expression.Identifier.Value), *expression.GetToken())
+	return *NewPushFromRegisterEntry(nil, f.getRegisterOf(expression.Identifier.Value), *expression.GetToken())
 }

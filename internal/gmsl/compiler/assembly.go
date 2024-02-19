@@ -23,6 +23,7 @@ type FunctionInfo struct {
 	strings           []string
 	entries           []AssemblyEntry
 	identifierNameMap map[string]IdentifierReference
+	nextLabel         *string
 }
 
 type Assembly struct {
@@ -62,7 +63,14 @@ func (t Type) String() string {
 }
 
 func newFunctionInfo(name string) *FunctionInfo {
-	return &FunctionInfo{name, make([]Type, 0), make([]Type, 0), make([]string, 0), make([]AssemblyEntry, 0), make(map[string]IdentifierReference)}
+	return &FunctionInfo{name,
+		make([]Type, 0),
+		make([]Type, 0),
+		make([]string, 0),
+		make([]AssemblyEntry, 0),
+		make(map[string]IdentifierReference),
+		nil,
+	}
 }
 
 func (f *FunctionInfo) String() string {
@@ -100,10 +108,19 @@ func (f *FunctionInfo) String() string {
 
 func (f *FunctionInfo) addEntry(entry AssemblyEntry) {
 	f.entries = append(f.entries, entry)
+	if f.nextLabel != nil {
+		f.entries[len(f.entries)-1].label = f.nextLabel
+		f.nextLabel = nil
+	}
 }
 
 func (f *FunctionInfo) addEntries(entries []AssemblyEntry) {
+	nextIdx := len(f.entries)
 	f.entries = append(f.entries, entries...)
+	if f.nextLabel != nil {
+		f.entries[nextIdx].label = f.nextLabel
+		f.nextLabel = nil
+	}
 }
 
 func (f *FunctionInfo) addString(value string) int {
@@ -151,4 +168,8 @@ func (f *FunctionInfo) GetArgumentCount() int {
 func (f *FunctionInfo) addArgument(value string, t Type) {
 	f.arguments = append(f.arguments, t)
 	f.addIdentifier(value, t)
+}
+
+func (f *FunctionInfo) setNextLabel(name *string) {
+	f.nextLabel = name
 }
