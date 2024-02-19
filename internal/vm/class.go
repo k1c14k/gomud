@@ -11,13 +11,8 @@ import (
 )
 
 type Class struct {
-	name       string
-	stringPool []string
-	methods    map[string]Method
-}
-
-func (c *Class) GetStringPool() []string {
-	return c.stringPool
+	name    string
+	methods map[string]Method
 }
 
 func (c *Class) GetMethod(name string) Method {
@@ -37,11 +32,11 @@ func newClass(name string) *Class {
 	ast := p.Parse()
 	aOut := compiler.NewCompiler(ast).Compile()
 
-	return &Class{name: name, stringPool: aOut.Consts, methods: NewMethodsFromAssembly(aOut)}
+	return &Class{name: name, methods: NewMethodsFromAssembly(aOut)}
 }
 
 func NewEmptyClass(name string) *Class {
-	return &Class{name: name, stringPool: []string{}, methods: make(map[string]Method)}
+	return &Class{name: name, methods: make(map[string]Method)}
 }
 
 func (c *Class) RegisterInternalMethod(name string, argumentCount int, returnValueCount int, handle MethodHandler) {
@@ -52,8 +47,6 @@ func (c *Class) RegisterInternalMethod(name string, argumentCount int, returnVal
 func (c *Class) String() string {
 	buff := bytes.NewBufferString("Class[")
 	buff.WriteString(c.name)
-	buff.WriteString(", staticStringPool=")
-	buff.WriteString(strconv.Itoa(len(c.stringPool)))
 	buff.WriteString(", methods=")
 	buff.WriteString(strconv.Itoa(len(c.methods)))
 	buff.WriteString("]")

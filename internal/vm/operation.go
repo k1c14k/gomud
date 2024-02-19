@@ -50,7 +50,6 @@ func (o *PushContextOperation) String() string {
 }
 
 type MethodCallOperation struct {
-	argumentCount int
 }
 
 func (o *MethodCallOperation) Execute(ef *ExecutionFrame) {
@@ -73,7 +72,7 @@ func (o *MethodCallOperation) Execute(ef *ExecutionFrame) {
 }
 
 func (o *MethodCallOperation) String() string {
-	return "CALL " + strconv.Itoa(o.argumentCount)
+	return "CALL"
 }
 
 type AddOperation struct{}
@@ -115,7 +114,7 @@ func (o *JumpIfFalseOperation) Execute(ef *ExecutionFrame) {
 	log.Println("Jumping if false")
 	var a = ef.valueStack.pop()
 	if !a.isTruthy() {
-		ef.programCounter = o.target
+		ef.programCounter = o.target - 1
 	}
 	log.Println("Jumped if false", a)
 }
@@ -130,7 +129,7 @@ type JumpOperation struct {
 
 func (o *JumpOperation) Execute(ef *ExecutionFrame) {
 	log.Println("Jumping")
-	ef.programCounter = o.target
+	ef.programCounter = o.target - 1
 	log.Println("Jumped")
 }
 
@@ -170,4 +169,16 @@ func (o *PushFromRegisterOperation) Execute(ef *ExecutionFrame) {
 
 func (o *PushFromRegisterOperation) String() string {
 	return "RPUSH " + strconv.Itoa(int(o.registerType)) + strconv.Itoa(o.index)
+}
+
+type ReturnOperation struct{}
+
+func (o *ReturnOperation) Execute(ef *ExecutionFrame) {
+	log.Println("Returning")
+	ef.programCounter = len(ef.program)
+	log.Println("Returned")
+}
+
+func (o *ReturnOperation) String() string {
+	return "RET"
 }
