@@ -131,6 +131,14 @@ func (v *VariableDeclarationStatement) PrettyPrint(tabs int) string {
 	return buf.String()
 }
 
+func (v *VariableDeclarationStatement) GetVariableName() string {
+	return v.name.String()
+}
+
+func (v *VariableDeclarationStatement) GetType() Type {
+	return v.typ
+}
+
 type VariableAssignmentStatement struct {
 	token *lexer.Token
 	name  Identifier
@@ -163,6 +171,14 @@ func (v *VariableAssignmentStatement) PrettyPrint(tabs int) string {
 	return buf.String()
 }
 
+func (v *VariableAssignmentStatement) GetExpression() *Expression {
+	return &v.value
+}
+
+func (v *VariableAssignmentStatement) GetVariableName() string {
+	return v.name.String()
+}
+
 type VariableCreateAndAssignStatement struct {
 	token *lexer.Token
 	name  Identifier
@@ -193,6 +209,14 @@ func (v *VariableCreateAndAssignStatement) PrettyPrint(tabs int) string {
 	buf.WriteString(v.value.String())
 	buf.WriteString("\n")
 	return buf.String()
+}
+
+func (v *VariableCreateAndAssignStatement) GetVariableName() string {
+	return v.name.String()
+}
+
+func (v *VariableCreateAndAssignStatement) GetExpression() *Expression {
+	return &v.value
 }
 
 func (c *Class) GetToken() *lexer.Token {

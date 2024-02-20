@@ -69,7 +69,12 @@ func (c *Compiler) processStatement(s *parser.Statement, f *FunctionInfo) {
 		c.processExpressionStatement(n, f)
 	case *parser.IfStatement:
 		c.processIfStatement(n, f)
-
+	case *parser.VariableDeclarationStatement:
+		c.processVariableDeclarationStatement(n, f)
+	case *parser.VariableAssignmentStatement:
+		c.processVariableAssignmentStatement(n, f)
+	case *parser.VariableCreateAndAssignStatement:
+		c.processVariableCreateAndAssignStatement(n, f)
 	default:
 		log.Panicln("Unknown statement type", n.String())
 	}
@@ -146,4 +151,19 @@ func (c *Compiler) processIfStatement(statement *parser.IfStatement, f *Function
 
 func (c *Compiler) processIdentifierExpression(expression *parser.IdentifierExpression, f *FunctionInfo) AssemblyEntry {
 	return *NewPushFromRegisterEntry(nil, f.getRegisterOf(expression.Identifier.Value), *expression.GetToken())
+}
+
+func (c *Compiler) processVariableDeclarationStatement(statement *parser.VariableDeclarationStatement, f *FunctionInfo) {
+	f.addIdentifier(statement.GetVariableName(), typToType[statement.GetType().Name])
+}
+
+func (c *Compiler) processVariableAssignmentStatement(statement *parser.VariableAssignmentStatement, f *FunctionInfo) {
+	f.addEntries(c.processExpression(statement.GetExpression(), f))
+	f.addEntry(*NewPopToRegisterEntry(nil, f.getRegisterOf(statement.GetVariableName()), *statement.GetToken()))
+}
+
+func (c *Compiler) processVariableCreateAndAssignStatement(statement *parser.VariableCreateAndAssignStatement, f *FunctionInfo) {
+	f.addIdentifier(statement.GetVariableName(), StringType)
+	f.addEntries(c.processExpression(statement.GetExpression(), f))
+	f.addEntry(*NewPopToRegisterEntry(nil, f.getRegisterOf(statement.GetVariableName()), *statement.GetToken()))
 }
