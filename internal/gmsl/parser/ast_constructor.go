@@ -60,3 +60,27 @@ func newStringLiteralExpression(token *lexer.Token) *StringLiteralExpression {
 func newIfStatement(condition *Expression, consequence *[]Statement, alternative *[]Statement, token *lexer.Token) *IfStatement {
 	return &IfStatement{token: token, Condition: *condition, Statements: *consequence, ElseStatements: *alternative}
 }
+
+func newVariableAssignmentStatement(name *Identifier, expression *Expression, token *lexer.Token) *VariableAssignmentStatement {
+	return &VariableAssignmentStatement{
+		token: token,
+		name:  *name,
+		value: *expression,
+	}
+}
+
+func newVariableCreateAndAssignStatement(name *Identifier, expression *Expression, token *lexer.Token) *VariableCreateAndAssignStatement {
+	return &VariableCreateAndAssignStatement{
+		token: token,
+		name:  *name,
+		value: *expression,
+	}
+}
+
+func newVariableDeclarationStatement(name *Identifier, typ *Type, token *lexer.Token) *VariableDeclarationStatement {
+	return &VariableDeclarationStatement{
+		token: token,
+		name:  *name,
+		typ:   *typ,
+	}
+}

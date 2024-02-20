@@ -64,6 +64,7 @@ var keywords = map[string]TokenType{
 	"func":    FuncToken,
 	"if":      IfToken,
 	"else":    ElseToken,
+	"var":     VarToken,
 }
 
 func (l *Lexer) hasPrefix(m map[string]TokenType) bool {
@@ -111,6 +112,8 @@ var operator = map[string]TokenType{
 	"+":  AddToken,
 	".":  MethodCallToken,
 	"==": EqualToken,
+	"=":  AssignToken,
+	":=": CreateAndAssignToken,
 }
 
 func isOperator(r rune) bool {

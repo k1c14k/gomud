@@ -22,26 +22,32 @@ const (
 	IfToken
 	ElseToken
 	EqualToken
+	AssignToken
+	CreateAndAssignToken
+	VarToken
 )
 
 var tokenNames = map[TokenType]string{
-	InvalidToken:    "InvalidToken",
-	EofToken:        "EofToken",
-	PackageToken:    "PackageToken",
-	ImportToken:     "ImportToken",
-	FuncToken:       "FuncToken",
-	IdentifierToken: "IdentifierToken",
-	OpenParenToken:  "OpenParenToken",
-	CloseParenToken: "CloseParenToken",
-	OpenBraceToken:  "OpenBraceToken",
-	CloseBraceToken: "CloseBraceToken",
-	StringToken:     "StringToken",
-	AddToken:        "AddToken",
-	MethodCallToken: "MethodCallToken",
-	TypeToken:       "TypeToken",
-	IfToken:         "IfToken",
-	ElseToken:       "ElseToken",
-	EqualToken:      "EqualToken",
+	InvalidToken:         "InvalidToken",
+	EofToken:             "EofToken",
+	PackageToken:         "PackageToken",
+	ImportToken:          "ImportToken",
+	FuncToken:            "FuncToken",
+	IdentifierToken:      "IdentifierToken",
+	OpenParenToken:       "OpenParenToken",
+	CloseParenToken:      "CloseParenToken",
+	OpenBraceToken:       "OpenBraceToken",
+	CloseBraceToken:      "CloseBraceToken",
+	StringToken:          "StringToken",
+	AddToken:             "AddToken",
+	MethodCallToken:      "MethodCallToken",
+	TypeToken:            "TypeToken",
+	IfToken:              "IfToken",
+	ElseToken:            "ElseToken",
+	EqualToken:           "EqualToken",
+	AssignToken:          "AssignToken",
+	CreateAndAssignToken: "CreateAndAssignToken",
+	VarToken:             "VarToken",
 }
 
 func (t TokenType) String() string {
