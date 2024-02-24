@@ -84,3 +84,7 @@ func newVariableDeclarationStatement(name *Identifier, typ *Type, token *lexer.T
 		typ:   *typ,
 	}
 }
+
+func newNumericLiteralExpression(token *lexer.Token) *NumericLiteralExpression {
+	return &NumericLiteralExpression{token: token}
+}

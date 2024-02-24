@@ -11,6 +11,10 @@ type OpCode int
 const (
 	OpReturn OpCode = iota
 	OpAdd
+	OpSub
+	OpMul
+	OpDiv
+	OpMod
 	OpCmp
 	OpCall
 	OpPushContext
@@ -19,12 +23,17 @@ const (
 	OpJump
 	OpPushFromRegister
 	OpPushString
+	OpPushNumber
 	OpNoOp
 )
 
 var opCodeString = map[OpCode]string{
 	OpReturn:           "RET",
 	OpAdd:              "ADD",
+	OpSub:              "SUB",
+	OpMul:              "MUL",
+	OpDiv:              "DIV",
+	OpMod:              "MOD",
 	OpCmp:              "CMP",
 	OpCall:             "CALL",
 	OpPushContext:      "PUCX",
@@ -33,6 +42,7 @@ var opCodeString = map[OpCode]string{
 	OpJump:             "JMP",
 	OpPushFromRegister: "PURE",
 	OpPushString:       "PUSC",
+	OpPushNumber:       "PUSN",
 	OpNoOp:             "NOOP",
 }
 
@@ -92,6 +102,10 @@ func NewReturnEntry(label *string, source lexer.Token) *AssemblyEntry {
 
 var tokenToOpCode = map[string]OpCode{
 	"+":  OpAdd,
+	"-":  OpSub,
+	"*":  OpMul,
+	"/":  OpDiv,
+	"%":  OpMod,
 	"==": OpCmp,
 }
 
@@ -135,4 +149,8 @@ func NewPushStringEntry(label *string, stringIdx int, source lexer.Token) *Assem
 
 func NewNoOpEntry(label *string, source lexer.Token) *AssemblyEntry {
 	return &AssemblyEntry{label: label, opCode: OpNoOp, source: source}
+}
+
+func NewPushNumberEntry(label *string, value int, source lexer.Token) *AssemblyEntry {
+	return &AssemblyEntry{label: label, opCode: OpPushNumber, argument: &value, source: source}
 }

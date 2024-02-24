@@ -16,7 +16,12 @@ const (
 	OpenBraceToken
 	CloseBraceToken
 	StringToken
+	NumericToken
 	AddToken
+	SubtractToken
+	MultiplyToken
+	DivideToken
+	ModuloToken
 	MethodCallToken
 	TypeToken
 	IfToken
@@ -39,7 +44,12 @@ var tokenNames = map[TokenType]string{
 	OpenBraceToken:       "OpenBraceToken",
 	CloseBraceToken:      "CloseBraceToken",
 	StringToken:          "StringToken",
+	NumericToken:         "NumericToken",
 	AddToken:             "AddToken",
+	SubtractToken:        "SubtractToken",
+	MultiplyToken:        "MultiplyToken",
+	DivideToken:          "DivideToken",
+	ModuloToken:          "ModuloToken",
 	MethodCallToken:      "MethodCallToken",
 	TypeToken:            "TypeToken",
 	IfToken:              "IfToken",

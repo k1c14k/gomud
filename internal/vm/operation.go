@@ -17,16 +17,7 @@ type PopToRegisterOperation struct {
 
 func (o *PopToRegisterOperation) Execute(ef *ExecutionFrame) {
 	log.Println("Popping to register", o.index)
-	switch o.registerType {
-	case StringRegisterType:
-		val := ef.valueStack.pop()
-		if s, ok := val.(*StringValue); ok {
-			ef.stringRegisters[o.index] = *s
-			log.Println("Popped to register", o.index, s.Value)
-		} else {
-			log.Panicln("Value is not a string")
-		}
-	}
+	ef.registers[o.index] = ef.valueStack.pop()
 }
 
 func (o *PopToRegisterOperation) String() string {
@@ -81,7 +72,7 @@ func (o *AddOperation) Execute(ef *ExecutionFrame) {
 	log.Println("Adding")
 	var a = ef.valueStack.pop()
 	var b = ef.valueStack.pop()
-	c := b.AddValue(a)
+	c := b.Add(a)
 
 	ef.valueStack.push(c)
 	log.Println("Added", a, b)
@@ -90,6 +81,75 @@ func (o *AddOperation) Execute(ef *ExecutionFrame) {
 
 func (o *AddOperation) String() string {
 	return "ADD"
+}
+
+type SubOperation struct{}
+
+func (o *SubOperation) String() string {
+	return "SUB"
+}
+
+func (o *SubOperation) Execute(ef *ExecutionFrame) {
+	log.Println("Subtracting")
+	var a = ef.valueStack.pop()
+	var b = ef.valueStack.pop()
+	c := b.Subtract(a)
+
+	ef.valueStack.push(c)
+	log.Println("Subtracted", a, b)
+	log.Println("Result", c)
+
+}
+
+type MulOperation struct{}
+
+func (o *MulOperation) String() string {
+	return "MUL"
+}
+
+func (o *MulOperation) Execute(ef *ExecutionFrame) {
+	log.Println("Multiplying")
+	var a = ef.valueStack.pop()
+	var b = ef.valueStack.pop()
+	c := b.Multiply(a)
+
+	ef.valueStack.push(c)
+	log.Println("Multiplied", a, b)
+	log.Println("Result", c)
+}
+
+type DivOperation struct{}
+
+func (o *DivOperation) String() string {
+	return "DIV"
+}
+
+func (o *DivOperation) Execute(ef *ExecutionFrame) {
+	log.Println("Dividing")
+	var a = ef.valueStack.pop()
+	var b = ef.valueStack.pop()
+	c := b.Divide(a)
+
+	ef.valueStack.push(c)
+	log.Println("Divided", a, b)
+	log.Println("Result", c)
+}
+
+type ModOperation struct{}
+
+func (m ModOperation) Execute(ef *ExecutionFrame) {
+	log.Println("Modding")
+	var a = ef.valueStack.pop()
+	var b = ef.valueStack.pop()
+	c := b.Modulo(a)
+
+	ef.valueStack.push(c)
+	log.Println("Modded", a, b)
+	log.Println("Result", c)
+}
+
+func (m ModOperation) String() string {
+	return "MOD"
 }
 
 type PushStringOperation struct {
@@ -160,11 +220,8 @@ type PushFromRegisterOperation struct {
 
 func (o *PushFromRegisterOperation) Execute(ef *ExecutionFrame) {
 	log.Println("Pushing from register", o.index)
-	switch o.registerType {
-	case StringRegisterType:
-		ef.valueStack.push(&ef.stringRegisters[o.index])
-		log.Println("Pushed from register", o.index, ef.stringRegisters[o.index].Value)
-	}
+	ef.valueStack.push(ef.registers[o.index])
+	log.Println("Pushed from register", o.index)
 }
 
 func (o *PushFromRegisterOperation) String() string {
@@ -181,4 +238,18 @@ func (o *ReturnOperation) Execute(ef *ExecutionFrame) {
 
 func (o *ReturnOperation) String() string {
 	return "RET"
+}
+
+type PushNumberOperation struct {
+	value int
+}
+
+func (o *PushNumberOperation) String() string {
+	return "PUSN " + strconv.Itoa(o.value)
+}
+
+func (o *PushNumberOperation) Execute(ef *ExecutionFrame) {
+	log.Println("Pushing number", o.value)
+	ef.valueStack.push(NewNumberValue(o.value))
+	log.Println("Pushed number", o.value)
 }

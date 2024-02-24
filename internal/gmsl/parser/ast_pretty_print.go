@@ -128,3 +128,7 @@ func (i *IfStatement) PrettyPrint(tabs int) string {
 func (i *IdentifierExpression) PrettyPrint(_ int) string {
 	return i.Identifier.String()
 }
+
+func (n *NumericLiteralExpression) PrettyPrint(_ int) string {
+	return n.token.GetRawValue()
+}
