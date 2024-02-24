@@ -13,7 +13,7 @@ type ContextProvider interface {
 }
 
 type ExecutionFrame struct {
-	stringRegisters []StringValue
+	registers       []Value
 	valueStack      ValueStack
 	nextFrame       *ExecutionFrame
 	programCounter  int
@@ -24,7 +24,7 @@ type ExecutionFrame struct {
 
 func NewExecutionFrame(contextProvider ContextProvider) *ExecutionFrame {
 	return &ExecutionFrame{
-		stringRegisters: make([]StringValue, 20),
+		registers:       make([]Value, 20),
 		valueStack:      *NewValueStack(),
 		programCounter:  0,
 		contextProvider: contextProvider,

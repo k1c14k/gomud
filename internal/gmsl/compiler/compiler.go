@@ -114,6 +114,9 @@ func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionI
 	case *parser.StringLiteralExpression:
 		stringIdx := f.addString((*expression).(*parser.StringLiteralExpression).Value)
 		result = append(result, *NewPushStringEntry(nil, stringIdx, *(*expression).(*parser.StringLiteralExpression).GetToken()))
+	case *parser.NumericLiteralExpression:
+		e := (*expression).(*parser.NumericLiteralExpression)
+		result = append(result, *NewPushNumberEntry(nil, e.GetValue(), *e.GetToken()))
 	case *parser.IdentifierExpression:
 		result = append(result, c.processIdentifierExpression((*expression).(*parser.IdentifierExpression), f))
 	default:

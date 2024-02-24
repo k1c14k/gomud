@@ -110,6 +110,10 @@ func (l *Lexer) isParenthesis() bool {
 
 var operator = map[string]TokenType{
 	"+":  AddToken,
+	"-":  SubtractToken,
+	"*":  MultiplyToken,
+	"/":  DivideToken,
+	"%":  ModuloToken,
 	".":  MethodCallToken,
 	"==": EqualToken,
 	"=":  AssignToken,
@@ -134,7 +138,7 @@ func (l *Lexer) isOperator() bool {
 	return false
 }
 
-var types = [...]string{"int", "float", "string", "map", "object", "function", "mixed"}
+var types = [...]string{"int", "string"}
 var validIdentifier = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789"
 
 func (l *Lexer) isType() bool {
@@ -166,6 +170,18 @@ func (l *Lexer) invalidToken() {
 	l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
 }
 
+func (l *Lexer) isNumeric() bool {
+	if l.pos >= len(l.input) {
+		return false
+	}
+
+	if l.input[l.pos] >= '0' && l.input[l.pos] <= '9' {
+		return true
+	}
+
+	return false
+}
+
 func defaultState(l *Lexer) State {
 whitespaces:
 	for {
@@ -195,8 +211,22 @@ whitespaces:
 		return stringState
 	case l.isType():
 		return typeState
+	case l.isNumeric():
+		return numberState
 	default:
 		return identifierState
+	}
+}
+
+func numberState(lexer *Lexer) State {
+	for {
+		if lexer.pos >= len(lexer.input) || !lexer.isNumeric() {
+			lexer.tokens <- Token{NumericToken, lexer.input[lexer.start:lexer.pos]}
+			lexer.start = lexer.pos
+			return defaultState
+		}
+
+		lexer.pos++
 	}
 }
 
@@ -277,13 +307,32 @@ func stringState(l *Lexer) State {
 }
 
 func operatorState(l *Lexer) State {
-	for k, v := range operator {
-		if strings.HasPrefix(l.input[l.pos:], k) {
-			l.pos += len(k)
+	switch l.input[l.pos] {
+	case '=':
+		if l.input[l.pos+1] == '=' {
+			l.tokens <- Token{EqualToken, "=="}
+			l.pos += 2
 			l.start = l.pos
-			l.tokens <- Token{v, k}
 			return defaultState
 		}
+		l.tokens <- Token{AssignToken, "="}
+		l.pos++
+		l.start = l.pos
+		return defaultState
+	case ':':
+		if l.input[l.pos+1] == '=' {
+			l.tokens <- Token{CreateAndAssignToken, ":="}
+			l.pos += 2
+			l.start = l.pos
+			return defaultState
+		}
+		l.invalidToken()
+		return nil
+	case '.', '+', '-', '*', '/', '%':
+		l.tokens <- Token{operator[l.input[l.pos:l.pos+1]], l.input[l.pos : l.pos+1]}
+		l.pos++
+		l.start = l.pos
+		return defaultState
 	}
 	l.invalidToken()
 	return nil

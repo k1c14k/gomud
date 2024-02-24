@@ -43,7 +43,7 @@ func (h *Handler) newPlayerObject(lineChannel chan string) *vm.Object {
 	class := vm.NewEmptyClass("<player>")
 	fromClass := vm.NewObjectFromClass(*class)
 	class.RegisterInternalMethod("Send", 1, 0, func(values []vm.Value) []vm.Value {
-		lineChannel <- values[0].(*vm.StringValue).Value
+		lineChannel <- values[0].String()
 		return []vm.Value{}
 	})
 	class.RegisterInternalMethod("String", 0, 1, func(values []vm.Value) []vm.Value {

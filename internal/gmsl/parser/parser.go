@@ -251,10 +251,9 @@ func (p *Parser) parseExpression() Expression {
 	tree := NewExpressionTree()
 
 	switch peeked[0].Typ {
-	case lexer.IdentifierToken, lexer.StringToken:
+	case lexer.IdentifierToken, lexer.StringToken, lexer.NumericToken:
 	default:
 		p.unexpectedToken(peeked[0])
-
 	}
 
 	for {
@@ -279,12 +278,17 @@ func (p *Parser) tryAddExpression(peeked []*lexer.Token, tree *ExpressionTree) (
 			return tree.GetExpression(), true
 		}
 		tree.AddExpression(p.parseStringLiteralExpression())
+	case peeked[0].Typ == lexer.NumericToken:
+		if !tree.CanAddLeaf() {
+			return tree.GetExpression(), true
+		}
+		tree.AddExpression(p.parseNumericLiteralExpression())
 	case peeked[0].Typ == lexer.IdentifierToken:
 		if !tree.CanAddLeaf() {
 			return tree.GetExpression(), true
 		}
 		tree.AddExpression(p.parseIdentifierExpression())
-	case peeked[0].Typ == lexer.AddToken, peeked[0].Typ == lexer.EqualToken:
+	case peeked[0].Typ == lexer.AddToken, peeked[0].Typ == lexer.EqualToken, peeked[0].Typ == lexer.DivideToken, peeked[0].Typ == lexer.MultiplyToken, peeked[0].Typ == lexer.SubtractToken, peeked[0].Typ == lexer.ModuloToken:
 		if !tree.CanAddBranch() {
 			p.unexpectedToken(peeked[0])
 		}
@@ -440,4 +444,12 @@ func (p *Parser) expect(token lexer.TokenType, s string) *lexer.Token {
 		log.Panicln("Expected", s, "got", token.String())
 	}
 	return read
+}
+
+func (p *Parser) parseNumericLiteralExpression() Expression {
+	log.Println("Parsing numeric literal ExpressionValue")
+	token := p.lexer.ReadNext()
+	p.unexpectedTokenExpected(lexer.NumericToken, token)
+
+	return newNumericLiteralExpression(token)
 }

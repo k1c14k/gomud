@@ -1,20 +1,42 @@
 package vm
 
-import "log"
+import (
+	"strconv"
+)
 
 type Value interface {
-	AddValue(v Value) Value
+	Add(v Value) Value
 	String() string
 	isTruthy() bool
 	equalValue(b Value) Value
+	Subtract(v Value) Value
+	Multiply(v Value) Value
+	Divide(v Value) Value
+	Modulo(v Value) Value
 }
 
 type StringValue struct {
 	Value string
 }
 
-func (s StringValue) AddValue(v Value) Value {
-	return NewStringValue(s.Value + v.String())
+func (s StringValue) Modulo(v Value) Value {
+	return modulo(s, v)
+}
+
+func (s StringValue) Divide(v Value) Value {
+	return divide(s, v)
+}
+
+func (s StringValue) Multiply(v Value) Value {
+	return multiply(s, v)
+}
+
+func (s StringValue) Subtract(v Value) Value {
+	return subtract(s, v)
+}
+
+func (s StringValue) Add(v Value) Value {
+	return add(s, v)
 }
 
 func (s StringValue) String() string {
@@ -55,21 +77,52 @@ func NewObjectValue(value *Object) *ObjectValue {
 	return &ObjectValue{value: value}
 }
 
-func (o ObjectValue) AddValue(_ Value) Value {
-	log.Panicln("Cannot add values")
-	return nil
+func (o ObjectValue) Add(v Value) Value {
+	return add(o, v)
+}
+
+func (o ObjectValue) Subtract(v Value) Value {
+	return subtract(o, v)
+}
+
+func (o ObjectValue) Divide(v Value) Value {
+	return divide(o, v)
 }
 
 func (o ObjectValue) String() string {
 	return "Object"
 }
 
+func (o ObjectValue) Multiply(v Value) Value {
+	return multiply(o, v)
+}
+
+func (o ObjectValue) Modulo(v Value) Value {
+	return modulo(o, v)
+}
+
 type BooleanValue struct {
 	Value bool
 }
 
-func (b BooleanValue) AddValue(v Value) Value {
-	return BooleanValue{b.Value || v.isTruthy()}
+func (b BooleanValue) Modulo(v Value) Value {
+	return modulo(b, v)
+}
+
+func (b BooleanValue) Divide(v Value) Value {
+	return divide(b, v)
+}
+
+func (b BooleanValue) Multiply(v Value) Value {
+	return multiply(b, v)
+}
+
+func (b BooleanValue) Subtract(v Value) Value {
+	return subtract(b, v)
+}
+
+func (b BooleanValue) Add(v Value) Value {
+	return add(b, v)
 }
 
 func (b BooleanValue) String() string {
@@ -88,4 +141,47 @@ func (b BooleanValue) equalValue(v Value) Value {
 		return BooleanValue{Value: b.Value == bv.Value}
 	}
 	return BooleanValue{Value: false}
+}
+
+type NumberValue struct {
+	Value int
+}
+
+func (n NumberValue) Modulo(v Value) Value {
+	return modulo(n, v)
+}
+
+func (n NumberValue) Divide(v Value) Value {
+	return divide(n, v)
+}
+
+func (n NumberValue) Multiply(v Value) Value {
+	return multiply(n, v)
+}
+
+func (n NumberValue) Subtract(v Value) Value {
+	return subtract(n, v)
+}
+
+func NewNumberValue(value int) NumberValue {
+	return NumberValue{Value: value}
+}
+
+func (n NumberValue) String() string {
+	return strconv.Itoa(n.Value)
+}
+
+func (n NumberValue) isTruthy() bool {
+	return n.Value != 0
+}
+
+func (n NumberValue) equalValue(v Value) Value {
+	if nv, ok := v.(NumberValue); ok {
+		return BooleanValue{Value: n.Value == nv.Value}
+	}
+	return BooleanValue{Value: false}
+}
+
+func (n NumberValue) Add(v Value) Value {
+	return add(n, v)
 }

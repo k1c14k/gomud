@@ -66,6 +66,14 @@ func NewMethodFromAssembly(f compiler.FunctionInfo) Method {
 			result.addOperation(&ReturnOperation{})
 		case compiler.OpAdd:
 			result.addOperation(&AddOperation{})
+		case compiler.OpSub:
+			result.addOperation(&SubOperation{})
+		case compiler.OpMul:
+			result.addOperation(&MulOperation{})
+		case compiler.OpDiv:
+			result.addOperation(&DivOperation{})
+		case compiler.OpMod:
+			result.addOperation(&ModOperation{})
 		case compiler.OpCmp:
 			result.addOperation(&EqualOperation{})
 		case compiler.OpCall:
@@ -84,6 +92,8 @@ func NewMethodFromAssembly(f compiler.FunctionInfo) Method {
 			result.addOperation(&PushFromRegisterOperation{registerType: StringRegisterType, index: e.GetArgument()})
 		case compiler.OpPushString:
 			result.addOperation(&PushStringOperation{index: e.GetArgument()})
+		case compiler.OpPushNumber:
+			result.addOperation(&PushNumberOperation{value: e.GetArgument()})
 		case compiler.OpNoOp:
 			// Do nothing
 		}

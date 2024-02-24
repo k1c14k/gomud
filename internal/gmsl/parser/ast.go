@@ -3,6 +3,8 @@ package parser
 import (
 	"bytes"
 	"goMud/internal/gmsl/lexer"
+	"log"
+	"strconv"
 )
 
 type AstNode interface {
@@ -58,6 +60,10 @@ type BinaryExpression struct {
 type StringLiteralExpression struct {
 	token *lexer.Token
 	Value string
+}
+
+type NumericLiteralExpression struct {
+	token *lexer.Token
 }
 
 type MethodCallExpression struct {
@@ -400,4 +406,20 @@ func (i *IdentifierExpression) GetToken() *lexer.Token {
 
 func (i *IdentifierExpression) String() string {
 	return i.Identifier.String()
+}
+
+func (n *NumericLiteralExpression) GetToken() *lexer.Token {
+	return n.token
+}
+
+func (n *NumericLiteralExpression) String() string {
+	return n.token.GetRawValue()
+}
+
+func (n *NumericLiteralExpression) GetValue() int {
+	result, err := strconv.Atoi(n.token.GetRawValue())
+	if err != nil {
+		log.Panicln("Error converting numeric literal to int", err)
+	}
+	return result
 }
