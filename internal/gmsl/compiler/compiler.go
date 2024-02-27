@@ -47,6 +47,10 @@ func (c *Compiler) processFunctionDeclaration(n *parser.FunctionDeclaration) *Fu
 		c.processArgumentDeclaration(&a, result)
 	}
 
+	for _, r := range n.ReturnTypes {
+		result.addReturnType(typToType[r.Name])
+	}
+
 	for _, s := range n.Statements {
 		c.processStatement(&s, result)
 	}
@@ -75,6 +79,8 @@ func (c *Compiler) processStatement(s *parser.Statement, f *FunctionInfo) {
 		c.processVariableAssignmentStatement(n, f)
 	case *parser.VariableCreateAndAssignStatement:
 		c.processVariableCreateAndAssignStatement(n, f)
+	case *parser.ReturnStatement:
+		c.processReturnStatement(n, f)
 	default:
 		log.Panicln("Unknown statement type", n.String())
 	}
@@ -169,4 +175,9 @@ func (c *Compiler) processVariableCreateAndAssignStatement(statement *parser.Var
 	f.addIdentifier(statement.GetVariableName(), StringType)
 	f.addEntries(c.processExpression(statement.GetExpression(), f))
 	f.addEntry(*NewPopToRegisterEntry(nil, f.getRegisterOf(statement.GetVariableName()), *statement.GetToken()))
+}
+
+func (c *Compiler) processReturnStatement(statement *parser.ReturnStatement, functionInfo *FunctionInfo) {
+	functionInfo.addEntries(c.processExpression(statement.GetValue(), functionInfo))
+	functionInfo.addEntry(*NewReturnEntry(nil, *statement.GetToken()))
 }

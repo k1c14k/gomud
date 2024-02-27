@@ -30,6 +30,7 @@ const (
 	AssignToken
 	CreateAndAssignToken
 	VarToken
+	ReturnToken
 )
 
 var tokenNames = map[TokenType]string{
@@ -58,6 +59,7 @@ var tokenNames = map[TokenType]string{
 	AssignToken:          "AssignToken",
 	CreateAndAssignToken: "CreateAndAssignToken",
 	VarToken:             "VarToken",
+	ReturnToken:          "ReturnToken",
 }
 
 func (t TokenType) String() string {

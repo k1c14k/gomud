@@ -65,6 +65,7 @@ var keywords = map[string]TokenType{
 	"if":      IfToken,
 	"else":    ElseToken,
 	"var":     VarToken,
+	"return":  ReturnToken,
 }
 
 func (l *Lexer) hasPrefix(m map[string]TokenType) bool {

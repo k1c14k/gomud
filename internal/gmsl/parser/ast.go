@@ -79,10 +79,11 @@ type ExpressionStatement struct {
 }
 
 type FunctionDeclaration struct {
-	token      *lexer.Token
-	Name       Identifier
-	Arguments  []ArgumentDeclaration
-	Statements []Statement
+	token       *lexer.Token
+	Name        Identifier
+	Arguments   []ArgumentDeclaration
+	ReturnTypes []Type
+	Statements  []Statement
 }
 
 type Class struct {
@@ -108,6 +109,38 @@ type VariableDeclarationStatement struct {
 	token *lexer.Token
 	name  Identifier
 	typ   Type
+}
+
+type ReturnStatement struct {
+	token *lexer.Token
+	value Expression
+}
+
+func (r *ReturnStatement) GetToken() *lexer.Token {
+	return r.token
+}
+
+func (r *ReturnStatement) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("(return ")
+	buf.WriteString(r.value.String())
+	buf.WriteString(")")
+	return buf.String()
+}
+
+func (r *ReturnStatement) PrettyPrint(tabs int) string {
+	var buf bytes.Buffer
+	for i := 0; i < tabs; i++ {
+		buf.WriteString("\t")
+	}
+	buf.WriteString("return ")
+	buf.WriteString(r.value.PrettyPrint(tabs))
+	buf.WriteString("\n")
+	return buf.String()
+}
+
+func (r *ReturnStatement) GetValue() *Expression {
+	return &r.value
 }
 
 func (v *VariableDeclarationStatement) GetToken() *lexer.Token {
