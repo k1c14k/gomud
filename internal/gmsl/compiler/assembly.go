@@ -173,3 +173,7 @@ func (f *FunctionInfo) addArgument(value string, t Type) {
 func (f *FunctionInfo) setNextLabel(name *string) {
 	f.nextLabel = name
 }
+
+func (f *FunctionInfo) addReturnType(typ Type) {
+	f.returns = append(f.returns, typ)
+}

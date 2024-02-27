@@ -17,8 +17,8 @@ func newImportDeclarationList(imports *[]Identifier, token *lexer.Token) *Import
 	return &ImportDeclarationList{token: token, Imports: *imports}
 }
 
-func newFunctionDeclaration(name *Identifier, args *[]ArgumentDeclaration, statements *[]Statement, token *lexer.Token) *FunctionDeclaration {
-	return &FunctionDeclaration{token: token, Name: *name, Arguments: *args, Statements: *statements}
+func newFunctionDeclaration(name *Identifier, args *[]ArgumentDeclaration, returnTypes []Type, statements *[]Statement, token *lexer.Token) *FunctionDeclaration {
+	return &FunctionDeclaration{token: token, Name: *name, Arguments: *args, ReturnTypes: returnTypes, Statements: *statements}
 }
 
 func newArgumentDeclaration(name *Identifier, typ *Type, token *lexer.Token) *ArgumentDeclaration {
@@ -87,4 +87,8 @@ func newVariableDeclarationStatement(name *Identifier, typ *Type, token *lexer.T
 
 func newNumericLiteralExpression(token *lexer.Token) *NumericLiteralExpression {
 	return &NumericLiteralExpression{token: token}
+}
+
+func newReturnStatement(value *Expression, source *lexer.Token) Statement {
+	return &ReturnStatement{token: source, value: *value}
 }

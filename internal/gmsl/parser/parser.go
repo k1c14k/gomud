@@ -148,9 +148,18 @@ func (p *Parser) parseFunctionDeclaration() FunctionDeclaration {
 
 	name := p.parseIdentifier()
 	arguments := p.parseArgumentDeclarations()
+	returnTypes := make([]Type, 0)
+	switch p.lexer.Peek().Typ {
+	case lexer.TypeToken:
+		returnTypes = append(returnTypes, *p.parseType())
+	case lexer.OpenBraceToken:
+		break
+	default:
+		p.unexpectedToken(p.lexer.Peek())
+	}
 	statements := p.parseStatements()
 
-	declaration := newFunctionDeclaration(name, &arguments, &statements, token)
+	declaration := newFunctionDeclaration(name, &arguments, returnTypes, &statements, token)
 	return *declaration
 }
 
@@ -230,6 +239,8 @@ func (p *Parser) parseStatement() Statement {
 		}
 	case lexer.IfToken:
 		return p.parseIfStatement()
+	case lexer.ReturnToken:
+		return p.parseReturnStatement()
 	default:
 		p.unexpectedToken(peeked[0])
 	}
@@ -452,4 +463,13 @@ func (p *Parser) parseNumericLiteralExpression() Expression {
 	p.unexpectedTokenExpected(lexer.NumericToken, token)
 
 	return newNumericLiteralExpression(token)
+}
+
+func (p *Parser) parseReturnStatement() Statement {
+	log.Println("Parsing return statement")
+	token := p.expect(lexer.ReturnToken, "ReturnToken")
+
+	expression := p.parseExpression()
+
+	return newReturnStatement(&expression, token)
 }

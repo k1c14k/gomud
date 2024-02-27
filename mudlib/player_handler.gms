@@ -13,5 +13,5 @@ func HandleLine(line string) {
             player.Send("I don't understand that command.")
         }
     }
-    room.SendDescription()
+    player.Send(room.GetDescription())
 }

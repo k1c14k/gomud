@@ -1,7 +1,7 @@
 package main
 
-func SendDescription() {
-    player.Send("You are in a room. There is a door to the north.")
+func GetDescription() string {
+    return "You are in a room. There is a door to the north."
 }
 
 func TryMove(direction string) {
