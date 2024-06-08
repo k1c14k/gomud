@@ -2,6 +2,7 @@ package net
 
 import (
 	"fmt"
+	"goMud/internal/config"
 	"goMud/internal/game"
 	"goMud/internal/vm"
 	"net"
@@ -10,14 +11,16 @@ import (
 
 type Server struct {
 	listener net.Listener
+	address  string
 }
 
 func NewServer() *Server {
-	return &Server{}
+	var myConfig = config.GetConfig()
+	return &Server{address: myConfig.ServerConfig.Address}
 }
 
 func (s *Server) Start() {
-	listener, err := net.Listen("tcp", ":2323")
+	listener, err := net.Listen("tcp", s.address)
 	s.listener = listener
 
 	if err != nil {

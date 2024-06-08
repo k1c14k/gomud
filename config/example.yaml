@@ -1,0 +1,4 @@
+server_config:
+  address: 0.0.0.0:2323
+mudlib_config:
+  mudlib_path: mudlib/

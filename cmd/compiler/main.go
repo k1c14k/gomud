@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"goMud/internal/gmsl/compiler"
 	"goMud/internal/gmsl/lexer"
@@ -9,8 +10,9 @@ import (
 )
 
 func main() {
-	// read mudlib/player_handler.gms into string
-	b, err := os.ReadFile("mudlib/player_handler.gms")
+	source := flag.String("source", "", "Path to the source file")
+	flag.Parse()
+	b, err := os.ReadFile(*source)
 	if err != nil {
 		fmt.Println("Error reading file:", err)
 		return

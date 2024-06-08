@@ -26,3 +26,4 @@
 # Allow mudlib and documentation files
 !doc/
 !*.gms
+!config/
