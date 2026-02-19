@@ -2,6 +2,7 @@ package vm
 
 import (
 	"bytes"
+	"goMud/internal/config"
 	"goMud/internal/gmsl/compiler"
 	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
@@ -22,7 +23,7 @@ func (c *Class) GetMethod(name string) Method {
 func newClass(name string) *Class {
 	log.Println("Loading class", name)
 
-	b, err := os.ReadFile("mudlib/" + name + ".gms")
+	b, err := os.ReadFile(config.GetConfig().MudlibConfig.MudlibPath + name + ".gms")
 	if err != nil {
 		log.Panicln("Error reading file:", err)
 	}

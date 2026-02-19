@@ -2,6 +2,7 @@ package net
 
 import (
 	"fmt"
+	"goMud/internal/config"
 	"goMud/internal/game"
 	"goMud/internal/vm"
 	"net"
@@ -10,14 +11,17 @@ import (
 
 type Server struct {
 	listener net.Listener
+	address  string
 }
 
 func NewServer() *Server {
-	return &Server{}
+	var myConfig = config.GetConfig()
+	address := fmt.Sprintf("%s:%d", myConfig.ServerConfig.Host, myConfig.ServerConfig.Port)
+	return &Server{address: address}
 }
 
 func (s *Server) Start() {
-	listener, err := net.Listen("tcp", ":2323")
+	listener, err := net.Listen("tcp", s.address)
 	s.listener = listener
 
 	if err != nil {
@@ -25,7 +29,8 @@ func (s *Server) Start() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Server listening on port 2323")
+	myConfig := config.GetConfig()
+	fmt.Printf("Server listening on port %d\n", myConfig.ServerConfig.Port)
 	virtialMachine := vm.GetVirtualMachine()
 	go virtialMachine.Run()
 
