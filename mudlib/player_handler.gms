@@ -1,5 +1,3 @@
-package main
-
 func HandleLine(line string) {
     var north_direction string
     north_direction = "north"

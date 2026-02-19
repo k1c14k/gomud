@@ -59,13 +59,12 @@ func (l *Lexer) ReadNext() *Token {
 }
 
 var keywords = map[string]TokenType{
-	"package": PackageToken,
-	"import":  ImportToken,
-	"func":    FuncToken,
-	"if":      IfToken,
-	"else":    ElseToken,
-	"var":     VarToken,
-	"return":  ReturnToken,
+	"import": ImportToken,
+	"func":   FuncToken,
+	"if":     IfToken,
+	"else":   ElseToken,
+	"var":    VarToken,
+	"return": ReturnToken,
 }
 
 func (l *Lexer) hasPrefix(m map[string]TokenType) bool {

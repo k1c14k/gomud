@@ -156,12 +156,8 @@ func (p *Parser) Parse() *Class {
 
 		case StateClass:
 			log.Println("Parsing class")
-			token := p.lexer.ReadNext()
-			if token.Typ != lexer.PackageToken {
-				panic("Expected class")
-			}
-			name := p.parseIdentifier()
-			frame.Class = newClass(name, token)
+			token := p.lexer.Peek()
+			frame.Class = newClass(token)
 
 			frame.State = StateClassBody
 			p.push(frame)

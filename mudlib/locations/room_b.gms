@@ -1,5 +1,3 @@
-package main
-
 func GetDescription() string {
     return "You are in a small room. There is a door to the south."
 }

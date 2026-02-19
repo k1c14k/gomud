@@ -88,7 +88,6 @@ type FunctionDeclaration struct {
 
 type Class struct {
 	token     *lexer.Token
-	Name      Identifier
 	Imports   []ImportDeclaration
 	Functions []FunctionDeclaration
 }
@@ -264,8 +263,7 @@ func (c *Class) GetToken() *lexer.Token {
 
 func (c *Class) String() string {
 	var buf bytes.Buffer
-	buf.WriteString("(class ")
-	buf.WriteString(c.Name.String())
+	buf.WriteString("(class")
 	for _, i := range c.Imports {
 		buf.WriteString(" ")
 		buf.WriteString(i.String())

@@ -4,8 +4,7 @@ import "bytes"
 
 func (c *Class) PrettyPrint(tabs int) string {
 	var buffer bytes.Buffer
-	buffer.WriteString("# class ")
-	buffer.WriteString(c.Name.String())
+	buffer.WriteString("class")
 	buffer.WriteString("\n\n")
 	for _, i := range c.Imports {
 		buffer.WriteString(i.PrettyPrint(tabs))

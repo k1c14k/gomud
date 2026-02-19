@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-func newClass(name *Identifier, token *lexer.Token) *Class {
-	return &Class{token: token, Name: *name, Imports: make([]ImportDeclaration, 0)}
+func newClass(token *lexer.Token) *Class {
+	return &Class{token: token, Imports: make([]ImportDeclaration, 0)}
 }
 
 func newSingleImportDeclaration(name *Identifier, token *lexer.Token) *SingleImportDeclaration {

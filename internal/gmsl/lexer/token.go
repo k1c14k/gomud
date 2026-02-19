@@ -7,7 +7,6 @@ type TokenType int
 const (
 	InvalidToken TokenType = iota
 	EofToken
-	PackageToken
 	ImportToken
 	FuncToken
 	IdentifierToken
@@ -36,7 +35,6 @@ const (
 var tokenNames = map[TokenType]string{
 	InvalidToken:         "InvalidToken",
 	EofToken:             "EofToken",
-	PackageToken:         "PackageToken",
 	ImportToken:          "ImportToken",
 	FuncToken:            "FuncToken",
 	IdentifierToken:      "IdentifierToken",
