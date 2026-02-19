@@ -16,7 +16,8 @@ type Server struct {
 
 func NewServer() *Server {
 	var myConfig = config.GetConfig()
-	return &Server{address: myConfig.ServerConfig.Address}
+	address := fmt.Sprintf("%s:%d", myConfig.ServerConfig.Host, myConfig.ServerConfig.Port)
+	return &Server{address: address}
 }
 
 func (s *Server) Start() {
@@ -28,7 +29,8 @@ func (s *Server) Start() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Server listening on port 2323")
+	myConfig := config.GetConfig()
+	fmt.Printf("Server listening on port %d\n", myConfig.ServerConfig.Port)
 	virtialMachine := vm.GetVirtualMachine()
 	go virtialMachine.Run()
 

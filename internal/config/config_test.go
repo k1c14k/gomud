@@ -28,9 +28,10 @@ func Test_loadConfigFromYamlString(t *testing.T) {
 			args: args{
 				yamlString: `
                 server_config:
-                    address:	0.0.0.0:2323
+                    host: 0.0.0.0
+                    port: 2323
                 mudlib_config:
-                    mudlib_path:	mudlib/
+                    mudlib_path: mudlib/
                 invalid_yaml`,
 			},
 			want:    defaultConfig,
@@ -40,19 +41,17 @@ func Test_loadConfigFromYamlString(t *testing.T) {
 			args: args{
 				yamlString: `
             server_config:
-                address:	0.0.0.1:2323
+                host: 0.0.0.1
+                port: 2323
             mudlib_config:
-                mudlib_path:	mudlib/`,
+                mudlib_path: mudlib/`,
 			},
 			want: Config{
-				ServerConfig: struct {
-					Address string `yaml:"address"`
-				}{
-					Address: "0.0.0.1:2323",
+				ServerConfig: ServerConfig{
+					Host: "0.0.0.1",
+					Port: 2323,
 				},
-				MudlibConfig: struct {
-					MudlibPath string `yaml:"mudlib_path"`
-				}{
+				MudlibConfig: MudlibConfig{
 					MudlibPath: "mudlib/",
 				},
 			},
@@ -62,11 +61,12 @@ func Test_loadConfigFromYamlString(t *testing.T) {
 			args: args{
 				yamlString: `
             server_config:
-                address: 127.0.0.1:2323`,
+                host: 127.0.0.1`,
 			},
 			want: Config{
 				ServerConfig: ServerConfig{
-					Address: "127.0.0.1:2323",
+					Host: "127.0.0.1",
+					Port: 2323,
 				},
 				MudlibConfig: MudlibConfig{
 					MudlibPath: "mudlib/",
@@ -82,7 +82,7 @@ func Test_loadConfigFromYamlString(t *testing.T) {
 					t.Errorf("loadConfigFromYamlString() recovered from panic, wantErr %v", tt.wantErr)
 				}
 			}()
-			if got := loadConfigFromYamlString(tt.args.yamlString); !reflect.DeepEqual(got, tt.want) {
+			if got := loadConfigFromYamlString(tt.args.yamlString); !reflect.DeepEqual(got, &tt.want) {
 				t.Errorf("loadConfigFromYamlString() = %v, want %v", got, tt.want)
 			}
 		})

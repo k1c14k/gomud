@@ -1,13 +1,15 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
 	"log"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 type ServerConfig struct {
-	Address string `yaml:"address"`
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
 }
 
 type MudlibConfig struct {
@@ -21,7 +23,8 @@ type Config struct {
 
 var defaultConfig = Config{
 	ServerConfig: ServerConfig{
-		Address: "0.0.0.0:2323",
+		Host: "0.0.0.0",
+		Port: 2323,
 	},
 	MudlibConfig: MudlibConfig{
 		MudlibPath: "mudlib/",
@@ -48,16 +51,22 @@ func SetConfigPath(path string) {
 
 func loadConfig() *Config {
 	if configPath == nil {
-		return &defaultConfig
+		config := defaultConfig
+		applyOverrides(&config)
+		return &config
 	}
 
 	b, err := os.ReadFile(*configPath)
 	if err != nil {
 		log.Println("Error reading config file:", err)
-		return &defaultConfig
+		config := defaultConfig
+		applyOverrides(&config)
+		return &config
 	}
 
-	return loadConfigFromYamlString(string(b))
+	config := loadConfigFromYamlString(string(b))
+	applyOverrides(config)
+	return config
 }
 
 func GetConfig() Config {
@@ -66,4 +75,28 @@ func GetConfig() Config {
 	}
 
 	return *config
+}
+
+var (
+	HostOverride   *string
+	PortOverride   *int
+	MudlibOverride *string
+)
+
+func SetOverrides(host *string, port *int, mudlib *string) {
+	HostOverride = host
+	PortOverride = port
+	MudlibOverride = mudlib
+}
+
+func applyOverrides(cfg *Config) {
+	if HostOverride != nil && *HostOverride != "" {
+		cfg.ServerConfig.Host = *HostOverride
+	}
+	if PortOverride != nil && *PortOverride != 0 {
+		cfg.ServerConfig.Port = *PortOverride
+	}
+	if MudlibOverride != nil && *MudlibOverride != "" {
+		cfg.MudlibConfig.MudlibPath = *MudlibOverride
+	}
 }
