@@ -1,6 +1,6 @@
 package vm
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 type RegisterType int
 
@@ -33,7 +33,7 @@ func NewExecutionFrame(contextProvider ContextProvider) *ExecutionFrame {
 
 func (ef *ExecutionFrame) GetFromStringPool(index int) string {
 	if index >= len(ef.stringPool) {
-		log.Panicln("String pool index out of range")
+		logrus.Panic("String pool index out of range")
 	}
 	return ef.stringPool[index]
 }
@@ -41,7 +41,7 @@ func (ef *ExecutionFrame) GetFromStringPool(index int) string {
 func (ef *ExecutionFrame) GetObjectFromContext(name string) ObjectValue {
 	obj := ef.contextProvider.GetObjectValueFromContext(name)
 	if obj == nil {
-		log.Panicln("Object not found in context")
+		logrus.Panic("Object not found in context")
 	}
 	return *obj
 }

@@ -1,6 +1,6 @@
 package vm
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 // mod(a, b)   | StringValue      		      | ObjectValue                 | BooleanValue                    | NumberValue
 // StringValue | unsupportedModulo(a,b)       | unsupportedModulo(a,b)      | unsupportedModulo(a,b)          | unsupportedModulo(a,b)
@@ -26,6 +26,6 @@ func modulo(a Value, b Value) Value {
 }
 
 func unsupportedModulo(a Value, b Value) Value {
-	log.Panicln("Modulo not supported between", a, "and", b)
+	logrus.Panic("Modulo not supported between", a, "and", b)
 	return nil
 }

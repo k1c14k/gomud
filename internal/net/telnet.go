@@ -1,6 +1,6 @@
 package net
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 type TelnetState int
 
@@ -119,7 +119,7 @@ func (t Telnet) handleLine(s string) {
 	if t.line_handler != nil {
 		t.line_handler <- s
 	} else {
-		log.Println("No line handler set for telnet, line sent:", s)
+		logrus.Debug("No line handler set for telnet, line sent:", s)
 	}
 }
 

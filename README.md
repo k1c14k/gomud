@@ -27,3 +27,10 @@ server_config:
 mudlib_config:
   mudlib_path: "mudlib/"
 ```
+
+## Directory Structure
+
+- `cmd/`: Command line applications (`compiler`, `server`)
+- `docs/`: Project documentation
+- `internal/`: Internal packages and game logic
+- `mudlib/`: Default mudlib (scripts, locations, players)

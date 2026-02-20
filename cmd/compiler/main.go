@@ -7,6 +7,8 @@ import (
 	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -14,7 +16,7 @@ func main() {
 	flag.Parse()
 	b, err := os.ReadFile(*source)
 	if err != nil {
-		fmt.Println("Error reading file:", err)
+		logrus.Error("Error reading file:", err)
 		return
 	}
 

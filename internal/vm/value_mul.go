@@ -1,8 +1,9 @@
 package vm
 
 import (
-	"log"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 // mul(a, b)   | StringValue      		        | ObjectValue                    | BooleanValue | NumberValue
@@ -91,7 +92,7 @@ func and(a Value, b Value) Value {
 }
 
 func unsupportedMultiplication(a Value, b Value) Value {
-	log.Panicln("Multiplication not supported between", a, "and", b)
+	logrus.Panic("Multiplication not supported between", a, "and", b)
 	return nil
 }
 

@@ -7,6 +7,8 @@ import (
 	"goMud/internal/vm"
 	"net"
 	"os"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Server struct {
@@ -25,19 +27,19 @@ func (s *Server) Start() {
 	s.listener = listener
 
 	if err != nil {
-		fmt.Println("Error listening:", err)
+		logrus.Error("Error listening:", err)
 		os.Exit(1)
 	}
 
 	myConfig := config.GetConfig()
-	fmt.Printf("Server listening on port %d\n", myConfig.ServerConfig.Port)
+	logrus.Infof("Server listening on port %d\n", myConfig.ServerConfig.Port)
 	virtialMachine := vm.GetVirtualMachine()
 	go virtialMachine.Run()
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Error accepting:", err)
+			logrus.Error("Error accepting:", err)
 			continue
 		}
 

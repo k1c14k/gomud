@@ -1,6 +1,6 @@
 package vm
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 // add(a,b)    | StringValue      		   | ObjectValue              | BooleanValue              | NumberValue
 // StringValue | concatenate(a,b)		   | unsupportedAddition(a,b) | concatenate(a,b.String()) | concatenate(a,b.String())
@@ -54,7 +54,7 @@ func or(a Value, b Value) Value {
 }
 
 func unsupportedAddition(a Value, b Value) Value {
-	log.Panicln("Addition not supported between", a, "and", b)
+	logrus.Panic("Addition not supported between", a, "and", b)
 	return nil
 }
 

@@ -2,7 +2,8 @@ package game
 
 import (
 	"goMud/internal/vm"
-	"log"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Handler struct {
@@ -15,7 +16,7 @@ type Handler struct {
 func (h *Handler) handleLines() {
 	channel := vm.GetCommandChannel()
 	h.prepareContext()
-	log.Println("Handler started")
+	logrus.Debug("Handler started")
 	for {
 		line := <-h.lineChannel
 		channel <- vm.NewMethodCallCommand(h.vmHandlerObject, "HandleLine", []vm.Value{vm.NewStringValue(line)}, &h.context)

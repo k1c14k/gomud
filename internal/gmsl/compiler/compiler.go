@@ -3,8 +3,9 @@ package compiler
 import (
 	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
-	"log"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Compiler struct {
@@ -31,7 +32,7 @@ func (c *Compiler) processNode(node *parser.AstNode) {
 	case *parser.FunctionDeclaration:
 		c.result.addFunction(c.processFunctionDeclaration(n))
 	default:
-		log.Panicln("Unknown node type", n.String())
+		logrus.Panic("Unknown node type", n.String())
 	}
 }
 
@@ -83,7 +84,7 @@ func (c *Compiler) processStatement(s *parser.Statement, f *FunctionInfo) {
 	case *parser.ReturnStatement:
 		c.processReturnStatement(n, f)
 	default:
-		log.Panicln("Unknown statement type", n.String())
+		logrus.Panic("Unknown statement type", n.String())
 	}
 }
 
@@ -125,7 +126,7 @@ func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionI
 	case *parser.ContextExpression:
 		result = append(result, c.processContextExpression((*expression).(*parser.ContextExpression), f))
 	default:
-		log.Panicln("Unknown expression type", (*expression).String())
+		logrus.Panic("Unknown expression type", (*expression).String())
 	}
 
 	return result

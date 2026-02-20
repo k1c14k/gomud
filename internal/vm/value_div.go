@@ -1,6 +1,6 @@
 package vm
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 // div(a, b)   | StringValue      		     | ObjectValue                 | BooleanValue                    | NumberValue
 // StringValue | unsupportedDivision(a,b)     | unsupportedDivision(a,b)    | unsupportedDivision(a,b)        | unsupportedDivision(a,b)
@@ -26,6 +26,6 @@ func divide(a Value, b Value) Value {
 }
 
 func unsupportedDivision(a Value, b Value) Value {
-	log.Panicln("Division not supported between", a, "and", b)
+	logrus.Panic("Division not supported between", a, "and", b)
 	return nil
 }

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/hex"
-	"fmt"
 	"net"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ConnectionCommandType int
@@ -43,12 +44,12 @@ func NewZLibContext() ZLibContext {
 func (z ZLibContext) Compress(data []byte) []byte {
 	_, err := z.zLibWriter.Write(data)
 	if err != nil {
-		fmt.Println("Error compressing data:", err)
+		logrus.Error("Error compressing data:", err)
 		return nil
 	}
 	err = z.zLibWriter.Flush()
 	if err != nil {
-		fmt.Println("Error flushing data:", err)
+		logrus.Error("Error flushing data:", err)
 		return nil
 	}
 	result := z.payload.Bytes()
@@ -84,7 +85,7 @@ func (c Connection) handleAsyncWrite() {
 			case CloseConnection:
 				err := c.conn.Close()
 				if err != nil {
-					fmt.Println("Error closing connection:", err)
+					logrus.Error("Error closing connection:", err)
 				}
 				return
 			}
@@ -97,16 +98,16 @@ func (c Connection) handleAsyncRead() {
 		buf := make([]byte, 1024)
 		length, err := c.conn.Read(buf)
 		if err != nil {
-			fmt.Println("Error reading:", err)
+			logrus.Error("Error reading:", err)
 			return
 		}
-		fmt.Println("Data received: " + hex.EncodeToString(buf[:length]))
+		logrus.Debug("Data received: " + hex.EncodeToString(buf[:length]))
 		c.read <- ConnectionRead{length: length, data: buf[:length]}
 	}
 }
 
 func (c Connection) sendData(data []byte) {
-	fmt.Println("Data to send: " + hex.EncodeToString(data))
+	logrus.Debug("Data to send: " + hex.EncodeToString(data))
 	var payload bytes.Buffer
 
 	if c.compressed == true {
@@ -116,11 +117,11 @@ func (c Connection) sendData(data []byte) {
 		payload.Write(data)
 	}
 
-	fmt.Println("Data sent: " + hex.EncodeToString(payload.Bytes()))
-	fmt.Println(hex.EncodeToString(payload.Bytes()))
+	logrus.Debug("Data sent: " + hex.EncodeToString(payload.Bytes()))
+	logrus.Debug(hex.EncodeToString(payload.Bytes()))
 	_, err := c.conn.Write(payload.Bytes())
 	if err != nil {
-		fmt.Println("Error writing data:", err)
+		logrus.Error("Error writing data:", err)
 		return
 	}
 }

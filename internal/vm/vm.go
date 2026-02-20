@@ -1,6 +1,6 @@
 package vm
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 type Command interface {
 	Handle(vm *VirtualMachine)
@@ -30,7 +30,7 @@ func (c *MethodCallCommand) Handle(vm *VirtualMachine) {
 
 func (c *StopCommand) Handle(vm *VirtualMachine) {
 	close(vm.commandChannel)
-	log.Println("VM stopped")
+	logrus.Info("VM stopped")
 }
 
 type VirtualMachine struct {
@@ -51,7 +51,7 @@ func GetVirtualMachine() *VirtualMachine {
 }
 
 func (vm *VirtualMachine) Run() {
-	log.Println("VM started")
+	logrus.Info("VM started")
 	for {
 		command := <-vm.commandChannel
 		command.Handle(vm)

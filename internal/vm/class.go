@@ -6,9 +6,10 @@ import (
 	"goMud/internal/gmsl/compiler"
 	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
-	"log"
 	"os"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Class struct {
@@ -21,11 +22,11 @@ func (c *Class) GetMethod(name string) Method {
 }
 
 func newClass(name string) *Class {
-	log.Println("Loading class", name)
+	logrus.Debug("Loading class", name)
 
 	b, err := os.ReadFile(config.GetConfig().MudlibConfig.MudlibPath + name + ".gms")
 	if err != nil {
-		log.Panicln("Error reading file:", err)
+		logrus.Panic("Error reading file:", err)
 	}
 
 	l := lexer.NewLexer(string(b))

@@ -1,6 +1,6 @@
 package vm
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 // sub(a, b)   | StringValue      		     | ObjectValue                 | BooleanValue                    | NumberValue
 // StringValue | unsupportedSubtraction(a,b) | unsupportedSubtraction(a,b) | unsupportedSubtraction(a,b)     | unsupportedSubtraction(a,b)
@@ -26,6 +26,6 @@ func subtract(a Value, b Value) Value {
 }
 
 func unsupportedSubtraction(a Value, b Value) Value {
-	log.Panicln("Subtraction not supported between", a, "and", b)
+	logrus.Panic("Subtraction not supported between", a, "and", b)
 	return nil
 }

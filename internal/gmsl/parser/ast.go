@@ -3,8 +3,9 @@ package parser
 import (
 	"bytes"
 	"goMud/internal/gmsl/lexer"
-	"log"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 type AstNode interface {
@@ -463,7 +464,7 @@ func (n *NumericLiteralExpression) String() string {
 func (n *NumericLiteralExpression) GetValue() int {
 	result, err := strconv.Atoi(n.token.GetRawValue())
 	if err != nil {
-		log.Panicln("Error converting numeric literal to int", err)
+		logrus.Panic("Error converting numeric literal to int", err)
 	}
 	return result
 }

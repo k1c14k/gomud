@@ -1,8 +1,9 @@
 package lexer
 
 import (
-	"log"
 	"strings"
+
+	"github.com/sirupsen/logrus"
 )
 
 type State func(*Lexer) State
@@ -49,11 +50,11 @@ func (l *Lexer) ReadNext() *Token {
 	case len(l.peeked) > 0:
 		t := l.peeked[0]
 		l.peeked = l.peeked[1:]
-		log.Println("Peeked token", t)
+		logrus.Debug("Peeked token", t)
 		return t
 	default:
 		token := l.nextToken()
-		log.Println("Read token", token)
+		logrus.Debug("Read token", token)
 		return token
 	}
 }

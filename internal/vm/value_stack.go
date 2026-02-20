@@ -1,6 +1,6 @@
 package vm
 
-import "log"
+import "github.com/sirupsen/logrus"
 
 type ValueStack struct {
 	values  []Value
@@ -18,7 +18,7 @@ func NewValueStack() *ValueStack {
 
 func (vs *ValueStack) pop() Value {
 	if vs.pos == 0 {
-		log.Panicln("ValueStack is empty")
+		logrus.Panic("ValueStack is empty")
 	}
 	vs.pos--
 	return vs.values[vs.pos]
@@ -26,7 +26,7 @@ func (vs *ValueStack) pop() Value {
 
 func (vs *ValueStack) push(v Value) {
 	if vs.pos == vs.maxSize {
-		log.Panicln("ValueStack is full")
+		logrus.Panic("ValueStack is full")
 	}
 	vs.values[vs.pos] = v
 	vs.pos++

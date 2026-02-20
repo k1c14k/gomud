@@ -1,9 +1,9 @@
 package config
 
 import (
-	"log"
 	"os"
 
+	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,7 +36,7 @@ func loadConfigFromYamlString(yamlString string) *Config {
 
 	err := yaml.Unmarshal([]byte(yamlString), &config)
 	if err != nil {
-		log.Println("Error unmarshalling yaml:", err)
+		logrus.Debug("Error unmarshalling yaml:", err)
 	}
 
 	return &config
@@ -58,7 +58,7 @@ func loadConfig() *Config {
 
 	b, err := os.ReadFile(*configPath)
 	if err != nil {
-		log.Println("Error reading config file:", err)
+		logrus.Debug("Error reading config file:", err)
 		config := defaultConfig
 		applyOverrides(&config)
 		return &config

@@ -2,7 +2,8 @@ package parser
 
 import (
 	"goMud/internal/gmsl/lexer"
-	"log"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ParseState int
@@ -99,46 +100,46 @@ func (p *Parser) popNode() AstNode {
 }
 
 func (p *Parser) unexpectedToken(token *lexer.Token) {
-	log.Panicln("Unexpected token", token.String())
+	logrus.Panic("Unexpected token", token.String())
 }
 
 func (p *Parser) unexpectedTokenExpected(expected lexer.TokenType, actual *lexer.Token) {
 	if actual.Typ != expected {
-		log.Panicln("Unexpected token", actual.String(), "expected", expected)
+		logrus.Panic("Unexpected token", actual.String(), "expected", expected)
 	}
 }
 
 func (p *Parser) expect(expected lexer.TokenType, name string) *lexer.Token {
 	read := p.lexer.ReadNext()
 	if expected != read.Typ {
-		log.Panicln("Expected", name, "got", read.String())
+		logrus.Panic("Expected", name, "got", read.String())
 	}
 	return read
 }
 
 func (p *Parser) parseIdentifier() *Identifier {
-	log.Println("Parsing identifier")
+	logrus.Debug("Parsing identifier")
 	token := p.lexer.ReadNext()
 	if token.Typ != lexer.IdentifierToken && token.Typ != lexer.ContextToken {
-		log.Panicln("Expected identifier, got", token.String())
+		logrus.Panic("Expected identifier, got", token.String())
 	}
 	return newIdentifier(token)
 }
 
 func (p *Parser) parseStringValue() *Identifier {
-	log.Println("Parsing string value")
+	logrus.Debug("Parsing string value")
 	token := p.lexer.ReadNext()
 	if token.Typ != lexer.StringToken {
-		log.Panicln("Expected string value, got", token.String())
+		logrus.Panic("Expected string value, got", token.String())
 	}
 	return newIdentifier(token)
 }
 
 func (p *Parser) parseType() *Type {
-	log.Println("Parsing type")
+	logrus.Debug("Parsing type")
 	token := p.lexer.ReadNext()
 	if token.Typ != lexer.TypeToken {
-		log.Panicln("Expected TypeToken, got", token.String())
+		logrus.Panic("Expected TypeToken, got", token.String())
 	}
 	return newType(token)
 }
@@ -155,7 +156,7 @@ func (p *Parser) Parse() *Class {
 		switch frame.State {
 
 		case StateClass:
-			log.Println("Parsing class")
+			logrus.Debug("Parsing class")
 			token := p.lexer.Peek()
 			frame.Class = newClass(token)
 
@@ -174,7 +175,7 @@ func (p *Parser) Parse() *Class {
 				case *ImportDeclarationList:
 					frame.Class.Imports = append(frame.Class.Imports, n)
 				default:
-					log.Panicln("Unexpected node in StateClassBody:", n)
+					logrus.Panic("Unexpected node in StateClassBody:", n)
 				}
 			}
 
@@ -193,22 +194,22 @@ func (p *Parser) Parse() *Class {
 			}
 
 		case StateImportDecl:
-			log.Println("Parsing import declarations")
+			logrus.Debug("Parsing import declarations")
 			token := p.lexer.Peek()
 			if token.Typ == lexer.ImportToken {
-				log.Println("Parsing import declaration")
+				logrus.Debug("Parsing import declaration")
 				tokens := p.lexer.PeekSome(2)
 				if len(tokens) < 2 {
-					log.Panicln("Expected import declaration")
+					logrus.Panic("Expected import declaration")
 				}
 				switch tokens[1].Typ {
 				case lexer.IdentifierToken:
-					log.Println("Parsing single import declaration")
+					logrus.Debug("Parsing single import declaration")
 					t2 := p.lexer.ReadNext()
 					name := p.parseStringValue()
 					p.pushNode(newSingleImportDeclaration(name, t2))
 				case lexer.OpenParenToken:
-					log.Println("Parsing import declaration list")
+					logrus.Debug("Parsing import declaration list")
 					t2 := p.lexer.ReadNext()
 					skip := p.lexer.ReadNext()
 					if skip.Typ != lexer.OpenParenToken {
@@ -233,10 +234,10 @@ func (p *Parser) Parse() *Class {
 			}
 
 		case StateFuncDecl:
-			log.Println("Parsing function declaration")
+			logrus.Debug("Parsing function declaration")
 			token := p.lexer.ReadNext()
 			if token.Typ != lexer.FuncToken {
-				log.Panicln("Expected FuncToken, got", token.String())
+				logrus.Panic("Expected FuncToken, got", token.String())
 			}
 			name := p.parseIdentifier()
 			frame.FuncDecl = &FunctionDeclaration{
@@ -245,7 +246,7 @@ func (p *Parser) Parse() *Class {
 				ReturnTypes: make([]Type, 0),
 			}
 
-			log.Println("Parsing arguments")
+			logrus.Debug("Parsing arguments")
 			t2 := p.lexer.ReadNext()
 			if t2.Typ != lexer.OpenParenToken {
 				p.unexpectedTokenExpected(lexer.OpenParenToken, t2)
@@ -261,7 +262,7 @@ func (p *Parser) Parse() *Class {
 				frame.State = StateFuncDeclReturn
 				p.push(frame)
 			} else {
-				log.Println("Parsing argument")
+				logrus.Debug("Parsing argument")
 				argName := p.parseIdentifier()
 				argType := p.parseType()
 				arg := newArgumentDeclaration(argName, argType, argName.token)
@@ -287,7 +288,7 @@ func (p *Parser) Parse() *Class {
 		case StateStatements:
 			if frame.FuncDecl != nil {
 				// From Function Declaration
-				log.Println("Parsing statements")
+				logrus.Debug("Parsing statements")
 				token := p.lexer.ReadNext()
 				if token.Typ != lexer.OpenBraceToken {
 					p.unexpectedTokenExpected(lexer.OpenBraceToken, token)
@@ -300,7 +301,7 @@ func (p *Parser) Parse() *Class {
 				p.push(frame)
 			} else {
 				// General use statements list
-				log.Println("Parsing statements")
+				logrus.Debug("Parsing statements")
 				token := p.lexer.ReadNext()
 				if token.Typ != lexer.OpenBraceToken {
 					p.unexpectedTokenExpected(lexer.OpenBraceToken, token)
@@ -359,7 +360,7 @@ func (p *Parser) Parse() *Class {
 			}
 
 		case StateStatement:
-			log.Println("Parsing statement")
+			logrus.Debug("Parsing statement")
 			peeked := p.lexer.PeekSome(2)
 			switch peeked[0].Typ {
 			case lexer.VarToken:
@@ -384,10 +385,10 @@ func (p *Parser) Parse() *Class {
 			}
 
 		case StateVariableDeclStmt:
-			log.Println("Parsing variable declaration statement")
+			logrus.Debug("Parsing variable declaration statement")
 			token := p.lexer.ReadNext()
 			if token.Typ != lexer.VarToken {
-				log.Panicln("Expected VarToken, got", token.String())
+				logrus.Panic("Expected VarToken, got", token.String())
 			}
 			name := p.parseIdentifier()
 			typ := p.parseType()
@@ -395,7 +396,7 @@ func (p *Parser) Parse() *Class {
 
 		case StateVariableAssignStmt:
 			if frame.Identifier == nil {
-				log.Println("Parsing variable assignment statement")
+				logrus.Debug("Parsing variable assignment statement")
 				token := p.lexer.Peek()
 				p.unexpectedTokenExpected(lexer.IdentifierToken, token)
 
@@ -415,7 +416,7 @@ func (p *Parser) Parse() *Class {
 
 		case StateVariableCreateAssignStmt:
 			if frame.Identifier == nil {
-				log.Println("Parsing variable create and assign statement")
+				logrus.Debug("Parsing variable create and assign statement")
 				token := p.lexer.Peek()
 				if token.Typ != lexer.IdentifierToken {
 					p.unexpectedTokenExpected(lexer.IdentifierToken, token)
@@ -447,10 +448,10 @@ func (p *Parser) Parse() *Class {
 
 		case StateIfStatement:
 			if frame.IfStmt == nil {
-				log.Println("Parsing if statement")
+				logrus.Debug("Parsing if statement")
 				token := p.lexer.ReadNext()
 				if token.Typ != lexer.IfToken {
-					log.Panicln("Expected IfToken, got", token.String())
+					logrus.Panic("Expected IfToken, got", token.String())
 				}
 				frame.IfStmt = &IfStatement{token: token}
 
@@ -473,7 +474,7 @@ func (p *Parser) Parse() *Class {
 
 		case StateReturnStmt:
 			if frame.ReturnStmt == nil {
-				log.Println("Parsing return statement")
+				logrus.Debug("Parsing return statement")
 				token := p.expect(lexer.ReturnToken, "ReturnToken")
 				frame.Token = token
 				frame.ReturnStmt = &ReturnStatement{} // dummy to track pass
@@ -486,7 +487,7 @@ func (p *Parser) Parse() *Class {
 			}
 
 		case StateExpression:
-			log.Println("Parsing ExpressionValue")
+			logrus.Debug("Parsing ExpressionValue")
 			peeked := p.lexer.PeekSome(2)
 			switch peeked[0].Typ {
 			case lexer.IdentifierToken, lexer.ContextToken, lexer.StringToken, lexer.NumericToken:
@@ -523,10 +524,10 @@ func (p *Parser) Parse() *Class {
 					p.pushNode(frame.ExprTree.GetExpression())
 					continue
 				}
-				log.Println("Parsing string literal ExpressionValue")
+				logrus.Debug("Parsing string literal ExpressionValue")
 				token := p.lexer.ReadNext()
 				if token.Typ != lexer.StringToken {
-					log.Panicln("Expected StringToken, got", token.String())
+					logrus.Panic("Expected StringToken, got", token.String())
 				}
 				frame.ExprTree.AddExpression(newStringLiteralExpression(token))
 				p.push(frame)
@@ -538,7 +539,7 @@ func (p *Parser) Parse() *Class {
 					p.pushNode(frame.ExprTree.GetExpression())
 					continue
 				}
-				log.Println("Parsing numeric literal ExpressionValue")
+				logrus.Debug("Parsing numeric literal ExpressionValue")
 				token := p.lexer.ReadNext()
 				p.unexpectedTokenExpected(lexer.NumericToken, token)
 				frame.ExprTree.AddExpression(newNumericLiteralExpression(token))
@@ -551,7 +552,7 @@ func (p *Parser) Parse() *Class {
 					p.pushNode(frame.ExprTree.GetExpression())
 					continue
 				}
-				log.Println("Parsing identifier ExpressionValue")
+				logrus.Debug("Parsing identifier ExpressionValue")
 				token := p.lexer.Peek()
 				if token.Typ != lexer.IdentifierToken && token.Typ != lexer.ContextToken {
 					p.unexpectedTokenExpected(lexer.IdentifierToken, token)
@@ -584,7 +585,7 @@ func (p *Parser) Parse() *Class {
 
 		case StateMethodCall:
 			if frame.Identifier == nil {
-				log.Println("Parsing method call ExpressionValue")
+				logrus.Debug("Parsing method call ExpressionValue")
 				token := p.lexer.Peek()
 				if token.Typ != lexer.IdentifierToken && token.Typ != lexer.ContextToken {
 					p.unexpectedTokenExpected(lexer.IdentifierToken, token)
@@ -594,7 +595,7 @@ func (p *Parser) Parse() *Class {
 
 				mtoken := p.lexer.ReadNext()
 				if mtoken.Typ != lexer.MethodCallToken {
-					log.Panicln("Expected MethodCallToken, got", mtoken.String())
+					logrus.Panic("Expected MethodCallToken, got", mtoken.String())
 				}
 				methodName := p.parseIdentifier()
 
@@ -606,7 +607,7 @@ func (p *Parser) Parse() *Class {
 					Arguments:  make([]Expression, 0),
 				}
 
-				log.Println("Parsing arguments")
+				logrus.Debug("Parsing arguments")
 				t2 := p.lexer.ReadNext()
 				if t2.Typ != lexer.OpenParenToken {
 					p.unexpectedTokenExpected(lexer.OpenParenToken, t2)

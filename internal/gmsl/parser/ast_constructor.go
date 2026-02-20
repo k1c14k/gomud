@@ -2,7 +2,8 @@ package parser
 
 import (
 	"goMud/internal/gmsl/lexer"
-	"log"
+
+	"github.com/sirupsen/logrus"
 )
 
 func newClass(token *lexer.Token) *Class {
@@ -56,7 +57,7 @@ func newBinaryExpression(token *lexer.Token) *BinaryExpression {
 func newStringLiteralExpression(token *lexer.Token) *StringLiteralExpression {
 	valueString, err := token.GetValueString()
 	if err != nil {
-		log.Panicln("Error parsing string value", err)
+		logrus.Panic("Error parsing string value", err)
 	}
 	return &StringLiteralExpression{token: token, Value: valueString}
 }
