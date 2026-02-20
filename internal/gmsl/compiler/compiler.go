@@ -8,11 +8,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Compiler translates an AST built by the parser into instruction Assembly representation.
 type Compiler struct {
 	ast    *parser.AstNode
 	result Assembly
 }
 
+// NewCompiler instantiates a Compiler given the root AST node block.
 func NewCompiler(ast parser.AstNode) *Compiler {
 	return &Compiler{
 		ast:    &ast,
@@ -20,6 +22,7 @@ func NewCompiler(ast parser.AstNode) *Compiler {
 	}
 }
 
+// Compile traverses the parsed AST and constructs the relevant machine code Assembly instructions.
 func (c *Compiler) Compile() *Assembly {
 	c.processNode(c.ast)
 	return &c.result
@@ -32,7 +35,7 @@ func (c *Compiler) processNode(node *parser.AstNode) {
 	case *parser.FunctionDeclaration:
 		c.result.addFunction(c.processFunctionDeclaration(n))
 	default:
-		logrus.Panic("Unknown node type", n.String())
+		logrus.Panic("Unknown node type: ", n.String())
 	}
 }
 
@@ -50,7 +53,11 @@ func (c *Compiler) processFunctionDeclaration(n *parser.FunctionDeclaration) *Fu
 	}
 
 	for _, r := range n.ReturnTypes {
-		result.addReturnType(typToType[r.Name])
+		if typ, ok := typToType[r.Name]; ok {
+			result.addReturnType(typ)
+		} else {
+			logrus.Panic("Unknown return type: ", r.Name)
+		}
 	}
 
 	for _, s := range n.Statements {
@@ -62,10 +69,15 @@ func (c *Compiler) processFunctionDeclaration(n *parser.FunctionDeclaration) *Fu
 
 var typToType = map[string]Type{
 	"string": StringType,
+	"int":    IntType,
 }
 
 func (c *Compiler) processArgumentDeclaration(argumentDeclaration *parser.ArgumentDeclaration, function *FunctionInfo) {
-	function.addArgument(argumentDeclaration.Name.Value, typToType[argumentDeclaration.Typ.Name])
+	typ, ok := typToType[argumentDeclaration.Typ.Name]
+	if !ok {
+		logrus.Panic("Unknown argument type: ", argumentDeclaration.Typ.Name)
+	}
+	function.addArgument(argumentDeclaration.Name.Value, typ)
 	function.addEntry(*NewPopToRegisterEntry(nil, function.getRegisterOf(argumentDeclaration.Name.Value), *argumentDeclaration.GetToken()))
 }
 
@@ -84,7 +96,7 @@ func (c *Compiler) processStatement(s *parser.Statement, f *FunctionInfo) {
 	case *parser.ReturnStatement:
 		c.processReturnStatement(n, f)
 	default:
-		logrus.Panic("Unknown statement type", n.String())
+		logrus.Panicf("Unknown statement type: %T", *s)
 	}
 }
 
@@ -93,52 +105,69 @@ func (c *Compiler) processExpressionStatement(statement *parser.ExpressionStatem
 }
 
 func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionInfo) []AssemblyEntry {
-	var result []AssemblyEntry
-	switch (*expression).(type) {
+	switch n := (*expression).(type) {
 	case *parser.MethodCallExpression:
-		for _, a := range (*expression).(*parser.MethodCallExpression).Arguments {
-			result = append(result, c.processExpression(&a, f)...)
-		}
-		methodName := (*expression).(*parser.MethodCallExpression).MethodName
-		nameIdx := f.addString(methodName.Value)
-		result = append(result, *NewPushStringEntry(nil, nameIdx, *methodName.GetToken()))
-		objectName := (*expression).(*parser.MethodCallExpression).ObjectName
-		objectIdx := f.addString(objectName.Value)
-		if objectName.GetToken().Typ == lexer.ContextToken {
-			result = append(result, *NewPushContextEntry(nil, objectIdx, *objectName.GetToken()))
-		} else {
-			result = append(result, *NewPushStringEntry(nil, objectIdx, *objectName.GetToken()))
-		}
-		n := (*expression).(*parser.MethodCallExpression).GetToken()
-		result = append(result, *NewCallEntry(nil, *n))
+		return c.processMethodCallExpression(n, f)
 	case *parser.BinaryExpression:
-		result = append(result, c.processExpression(&(*expression).(*parser.BinaryExpression).Left, f)...)
-		result = append(result, c.processExpression(&(*expression).(*parser.BinaryExpression).Right, f)...)
-		result = append(result, *NewOperationEntry(nil, *(*expression).(*parser.BinaryExpression).GetToken()))
+		return c.processBinaryExpression(n, f)
 	case *parser.StringLiteralExpression:
-		stringIdx := f.addString((*expression).(*parser.StringLiteralExpression).Value)
-		result = append(result, *NewPushStringEntry(nil, stringIdx, *(*expression).(*parser.StringLiteralExpression).GetToken()))
+		return c.processStringLiteralExpression(n, f)
 	case *parser.NumericLiteralExpression:
-		e := (*expression).(*parser.NumericLiteralExpression)
-		result = append(result, *NewPushNumberEntry(nil, e.GetValue(), *e.GetToken()))
+		return c.processNumericLiteralExpression(n, f)
 	case *parser.IdentifierExpression:
-		result = append(result, c.processIdentifierExpression((*expression).(*parser.IdentifierExpression), f))
+		return []AssemblyEntry{c.processIdentifierExpression(n, f)}
 	case *parser.ContextExpression:
-		result = append(result, c.processContextExpression((*expression).(*parser.ContextExpression), f))
+		return []AssemblyEntry{c.processContextExpression(n, f)}
 	default:
-		logrus.Panic("Unknown expression type", (*expression).String())
+		logrus.Panicf("Unknown expression type: %T", *expression)
+		return nil
+	}
+}
+
+func (c *Compiler) processMethodCallExpression(expression *parser.MethodCallExpression, f *FunctionInfo) []AssemblyEntry {
+	var result []AssemblyEntry
+	for _, a := range expression.Arguments {
+		result = append(result, c.processExpression(&a, f)...)
 	}
 
+	methodName := expression.MethodName
+	nameIdx := f.addString(methodName.Value)
+	result = append(result, *NewPushStringEntry(nil, nameIdx, *methodName.GetToken()))
+
+	objectName := expression.ObjectName
+	objectIdx := f.addString(objectName.Value)
+	if objectName.GetToken().Typ == lexer.ContextToken {
+		result = append(result, *NewPushContextEntry(nil, objectIdx, *objectName.GetToken()))
+	} else {
+		result = append(result, *NewPushStringEntry(nil, objectIdx, *objectName.GetToken()))
+	}
+
+	result = append(result, *NewCallEntry(nil, *expression.GetToken()))
 	return result
 }
 
+func (c *Compiler) processBinaryExpression(expression *parser.BinaryExpression, f *FunctionInfo) []AssemblyEntry {
+	var result []AssemblyEntry
+	result = append(result, c.processExpression(&expression.Left, f)...)
+	result = append(result, c.processExpression(&expression.Right, f)...)
+	result = append(result, *NewOperationEntry(nil, *expression.GetToken()))
+	return result
+}
+
+func (c *Compiler) processStringLiteralExpression(expression *parser.StringLiteralExpression, f *FunctionInfo) []AssemblyEntry {
+	stringIdx := f.addString(expression.Value)
+	return []AssemblyEntry{*NewPushStringEntry(nil, stringIdx, *expression.GetToken())}
+}
+
+func (c *Compiler) processNumericLiteralExpression(expression *parser.NumericLiteralExpression, f *FunctionInfo) []AssemblyEntry {
+	return []AssemblyEntry{*NewPushNumberEntry(nil, expression.GetValue(), *expression.GetToken())}
+}
+
 func (c *Compiler) processIfStatement(statement *parser.IfStatement, f *FunctionInfo) {
-	// Process the condition expression
 	f.addEntries(c.processExpression(&statement.Condition, f))
 	jumpLabelName := ".if_jump_" + strconv.Itoa(f.nextEntryPost())
 	f.addEntry(*NewJumpIfFalseEntry(nil, jumpLabelName, *statement.GetToken()))
 
-	// Process the statements in the 'if' block
 	for _, s := range statement.Statements {
 		c.processStatement(&s, f)
 	}
@@ -147,7 +176,6 @@ func (c *Compiler) processIfStatement(statement *parser.IfStatement, f *Function
 	f.addEntry(*NewJumpEntry(nil, jumpToEndLabelName, *statement.GetToken()))
 	f.setNextLabel(&jumpLabelName)
 
-	// Process the statements in the 'else' block, if it exists
 	if statement.ElseStatements != nil {
 		for _, s := range statement.ElseStatements {
 			c.processStatement(&s, f)
@@ -168,7 +196,11 @@ func (c *Compiler) processContextExpression(expression *parser.ContextExpression
 }
 
 func (c *Compiler) processVariableDeclarationStatement(statement *parser.VariableDeclarationStatement, f *FunctionInfo) {
-	f.addIdentifier(statement.GetVariableName(), typToType[statement.GetType().Name])
+	typ, ok := typToType[statement.GetType().Name]
+	if !ok {
+		logrus.Panic("Unknown variable type: ", statement.GetType().Name)
+	}
+	f.addIdentifier(statement.GetVariableName(), typ)
 }
 
 func (c *Compiler) processVariableAssignmentStatement(statement *parser.VariableAssignmentStatement, f *FunctionInfo) {

@@ -6,8 +6,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// State represents a transition function for the lexical analyzer.
 type State func(*Lexer) State
 
+// Lexer breaks down an input string into a stream of tokens for the parser.
 type Lexer struct {
 	input  string
 	start  int
@@ -17,21 +19,21 @@ type Lexer struct {
 	peeked []*Token
 }
 
+// NewLexer initializes a new Lexer with the given input string.
+func NewLexer(input string) *Lexer {
+	return &Lexer{
+		input:  input,
+		tokens: make(chan Token, 2),
+		state:  defaultState,
+	}
+}
+
 func (l *Lexer) run() {
 	state := defaultState
 	for state != nil {
 		state = state(l)
 	}
 	close(l.tokens)
-}
-
-func NewLexer(input string) *Lexer {
-	l := &Lexer{
-		input:  input,
-		tokens: make(chan Token, 2),
-		state:  defaultState,
-	}
-	return l
 }
 
 func (l *Lexer) nextToken() *Token {
@@ -45,33 +47,101 @@ func (l *Lexer) nextToken() *Token {
 	}
 }
 
+// ReadNext consumes and returns the next token from the lexer pipeline.
 func (l *Lexer) ReadNext() *Token {
-	switch {
-	case len(l.peeked) > 0:
+	if len(l.peeked) > 0 {
 		t := l.peeked[0]
 		l.peeked = l.peeked[1:]
 		logrus.Debug("Peeked token", t)
 		return t
-	default:
-		token := l.nextToken()
-		logrus.Debug("Read token", token)
-		return token
 	}
+
+	token := l.nextToken()
+	logrus.Debug("Read token", token)
+	return token
 }
 
-var keywords = map[string]TokenType{
-	"import": ImportToken,
-	"func":   FuncToken,
-	"if":     IfToken,
-	"else":   ElseToken,
-	"var":    VarToken,
-	"return": ReturnToken,
+// PeekSome retrieves the next 'n' tokens without consuming them from the lexer.
+func (l *Lexer) PeekSome(n int) []*Token {
+	for i := len(l.peeked); i < n; i++ {
+		l.peeked = append(l.peeked, l.nextToken())
+	}
+	return l.peeked[:n]
 }
 
-var contextNames = map[string]TokenType{
-	"player": ContextToken,
-	"room":   ContextToken,
-	"item":   ContextToken,
+// Peek returns the next token immediately available without consuming it.
+func (l *Lexer) Peek() *Token {
+	return l.PeekSome(1)[0]
+}
+
+var (
+	keywords = map[string]TokenType{
+		"import": ImportToken,
+		"func":   FuncToken,
+		"if":     IfToken,
+		"else":   ElseToken,
+		"var":    VarToken,
+		"return": ReturnToken,
+	}
+
+	contextNames = map[string]TokenType{
+		"player": ContextToken,
+		"room":   ContextToken,
+		"item":   ContextToken,
+	}
+
+	parenthesis = map[string]TokenType{
+		"(": OpenParenToken,
+		")": CloseParenToken,
+		"{": OpenBraceToken,
+		"}": CloseBraceToken,
+	}
+
+	operator = map[string]TokenType{
+		"+":  AddToken,
+		"-":  SubtractToken,
+		"*":  MultiplyToken,
+		"/":  DivideToken,
+		"%":  ModuloToken,
+		".":  MethodCallToken,
+		"==": EqualToken,
+		"=":  AssignToken,
+		":=": CreateAndAssignToken,
+	}
+
+	types = []string{"int", "string"}
+)
+
+const validIdentifier = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789"
+
+func isParenthesis(r rune) bool {
+	switch r {
+	case '(', ')', '{', '}':
+		return true
+	}
+	return false
+}
+
+func (l *Lexer) isParenthesis() bool {
+	if l.pos >= len(l.input) {
+		return false
+	}
+	return isParenthesis(rune(l.input[l.pos]))
+}
+
+func isOperator(r rune) bool {
+	switch r {
+	case '+', '-', '*', '/', '%', '.', '=', ':':
+		return true
+	}
+	return false
+}
+
+func (l *Lexer) isOperator() bool {
+	if l.pos >= len(l.input) {
+		return false
+	}
+	return isOperator(rune(l.input[l.pos]))
 }
 
 func (l *Lexer) hasPrefix(m map[string]TokenType) bool {
@@ -83,110 +153,36 @@ func (l *Lexer) hasPrefix(m map[string]TokenType) bool {
 	return false
 }
 
-func (l *Lexer) nextRunes(n int) string {
-	if l.pos+n > len(l.input) {
-		return l.input[l.pos:]
-	}
-	return l.input[l.pos : l.pos+n]
-}
-
-var parenthesis = map[string]TokenType{
-	"(": OpenParenToken,
-	")": CloseParenToken,
-	"{": OpenBraceToken,
-	"}": CloseBraceToken,
-}
-
-func isParenthesis(r rune) bool {
-	for k := range parenthesis {
-		if rune(k[0]) == r {
-			return true
-		}
-	}
-	return false
-}
-
-func (l *Lexer) isParenthesis() bool {
-	for k := range parenthesis {
-		if strings.HasPrefix(l.input[l.pos:], k) {
-			return true
-		}
-	}
-	return false
-}
-
-var operator = map[string]TokenType{
-	"+":  AddToken,
-	"-":  SubtractToken,
-	"*":  MultiplyToken,
-	"/":  DivideToken,
-	"%":  ModuloToken,
-	".":  MethodCallToken,
-	"==": EqualToken,
-	"=":  AssignToken,
-	":=": CreateAndAssignToken,
-}
-
-func isOperator(r rune) bool {
-	for k := range operator {
-		if rune(k[0]) == r {
-			return true
-		}
-	}
-	return false
-}
-
-func (l *Lexer) isOperator() bool {
-	for k := range operator {
-		if strings.HasPrefix(l.input[l.pos:], k) {
-			return true
-		}
-	}
-	return false
-}
-
-var types = [...]string{"int", "string"}
-var validIdentifier = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_0123456789"
-
 func (l *Lexer) isType() bool {
 	for _, t := range types {
 		if strings.HasPrefix(l.input[l.pos:], t) {
-			return !strings.ContainsAny(l.input[l.pos+len(t):l.pos+len(t)+1], validIdentifier)
+			if l.pos+len(t) < len(l.input) {
+				nextChar := rune(l.input[l.pos+len(t)])
+				if strings.ContainsRune(validIdentifier, nextChar) {
+					continue
+				}
+			}
+			return true
 		}
 	}
 	return false
-}
-
-func (l *Lexer) PeekSome(n int) []*Token {
-	if len(l.peeked) >= n {
-		return l.peeked[:n]
-	}
-
-	for i := len(l.peeked); i < n; i++ {
-		l.peeked = append(l.peeked, l.nextToken())
-	}
-
-	return l.peeked
-}
-
-func (l *Lexer) Peek() *Token {
-	return l.PeekSome(1)[0]
-}
-
-func (l *Lexer) invalidToken() {
-	l.tokens <- Token{InvalidToken, "Invalid token near " + l.nextRunes(20)}
 }
 
 func (l *Lexer) isNumeric() bool {
 	if l.pos >= len(l.input) {
 		return false
 	}
+	return l.input[l.pos] >= '0' && l.input[l.pos] <= '9'
+}
 
-	if l.input[l.pos] >= '0' && l.input[l.pos] <= '9' {
-		return true
+func (l *Lexer) invalidToken() {
+	var context string
+	if l.pos+20 > len(l.input) {
+		context = l.input[l.pos:]
+	} else {
+		context = l.input[l.pos : l.pos+20]
 	}
-
-	return false
+	l.tokens <- Token{InvalidToken, "Invalid token near " + context}
 }
 
 func defaultState(l *Lexer) State {
@@ -225,24 +221,28 @@ whitespaces:
 	}
 }
 
-func numberState(lexer *Lexer) State {
+func (l *Lexer) emit(typ TokenType, val string, advance int) {
+	l.tokens <- Token{typ, val}
+	l.pos += advance
+	l.start = l.pos
+}
+
+func numberState(l *Lexer) State {
 	for {
-		if lexer.pos >= len(lexer.input) || !lexer.isNumeric() {
-			lexer.tokens <- Token{NumericToken, lexer.input[lexer.start:lexer.pos]}
-			lexer.start = lexer.pos
+		if l.pos >= len(l.input) || !l.isNumeric() {
+			val := l.input[l.start:l.pos]
+			l.tokens <- Token{NumericToken, val}
+			l.start = l.pos
 			return defaultState
 		}
-
-		lexer.pos++
+		l.pos++
 	}
 }
 
 func keywordState(l *Lexer) State {
 	for k, v := range keywords {
 		if strings.HasPrefix(l.input[l.pos:], k+" ") {
-			l.pos += len(k) + 1
-			l.start = l.pos
-			l.tokens <- Token{v, k}
+			l.emit(v, k, len(k)+1)
 			return defaultState
 		}
 	}
@@ -251,28 +251,26 @@ func keywordState(l *Lexer) State {
 }
 
 func identifierState(l *Lexer) State {
+loop:
 	for {
 		if l.pos >= len(l.input) {
-			emitIdentifier(l)
-			return defaultState
+			break loop
 		}
 
-		if isParenthesis(rune(l.input[l.pos])) || isOperator(rune(l.input[l.pos])) {
-			emitIdentifier(l)
-			return defaultState
+		char := rune(l.input[l.pos])
+		if isParenthesis(char) || isOperator(char) {
+			break loop
 		}
 
-		switch l.input[l.pos] {
+		switch char {
 		case ' ', '\t', '\n', '\r':
-			emitIdentifier(l)
-			return defaultState
+			break loop
 		default:
 			l.pos++
+			continue loop
 		}
 	}
-}
 
-func emitIdentifier(l *Lexer) {
 	val := l.input[l.start:l.pos]
 	if tok, ok := contextNames[val]; ok {
 		l.tokens <- Token{tok, val}
@@ -280,14 +278,13 @@ func emitIdentifier(l *Lexer) {
 		l.tokens <- Token{IdentifierToken, val}
 	}
 	l.start = l.pos
+	return defaultState
 }
 
 func parenthesisState(l *Lexer) State {
 	for k, v := range parenthesis {
 		if strings.HasPrefix(l.input[l.pos:], k) {
-			l.pos += len(k)
-			l.start = l.pos
-			l.tokens <- Token{v, k}
+			l.emit(v, k, len(k))
 			return defaultState
 		}
 	}
@@ -305,9 +302,8 @@ func stringState(l *Lexer) State {
 		switch l.input[l.pos] {
 		case '"':
 			if lastChar != '\\' {
-				l.tokens <- Token{StringToken, l.input[l.start:l.pos]}
-				l.pos++
-				l.start = l.pos
+				val := l.input[l.start:l.pos]
+				l.emit(StringToken, val, 1) // Advance past closing quote
 				return defaultState
 			}
 			l.pos++
@@ -324,31 +320,23 @@ func stringState(l *Lexer) State {
 func operatorState(l *Lexer) State {
 	switch l.input[l.pos] {
 	case '=':
-		if l.input[l.pos+1] == '=' {
-			l.tokens <- Token{EqualToken, "=="}
-			l.pos += 2
-			l.start = l.pos
+		if l.pos+1 < len(l.input) && l.input[l.pos+1] == '=' {
+			l.emit(EqualToken, "==", 2)
 			return defaultState
 		}
-		l.tokens <- Token{AssignToken, "="}
-		l.pos++
-		l.start = l.pos
+		l.emit(AssignToken, "=", 1)
 		return defaultState
 	case ':':
-		if l.input[l.pos+1] == '=' {
-			l.tokens <- Token{CreateAndAssignToken, ":="}
-			l.pos += 2
-			l.start = l.pos
+		if l.pos+1 < len(l.input) && l.input[l.pos+1] == '=' {
+			l.emit(CreateAndAssignToken, ":=", 2)
 			return defaultState
 		}
-		l.invalidToken()
-		return nil
 	case '.', '+', '-', '*', '/', '%':
-		l.tokens <- Token{operator[l.input[l.pos:l.pos+1]], l.input[l.pos : l.pos+1]}
-		l.pos++
-		l.start = l.pos
+		char := l.input[l.pos : l.pos+1]
+		l.emit(operator[char], char, 1)
 		return defaultState
 	}
+
 	l.invalidToken()
 	return nil
 }
@@ -356,9 +344,7 @@ func operatorState(l *Lexer) State {
 func typeState(l *Lexer) State {
 	for _, t := range types {
 		if strings.HasPrefix(l.input[l.pos:], t) {
-			l.pos += len(t)
-			l.start = l.pos
-			l.tokens <- Token{TypeToken, t}
+			l.emit(TypeToken, t, len(t))
 			return defaultState
 		}
 	}

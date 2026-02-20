@@ -9,6 +9,7 @@ type Type int
 
 const (
 	StringType Type = iota
+	IntType
 )
 
 type IdentifierReference struct {
@@ -57,6 +58,8 @@ func (t Type) String() string {
 	switch t {
 	case StringType:
 		return "string"
+	case IntType:
+		return "int"
 	default:
 		return "unknown"
 	}
