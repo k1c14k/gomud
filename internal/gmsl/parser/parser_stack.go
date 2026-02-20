@@ -119,7 +119,7 @@ func (p *Parser) expect(expected lexer.TokenType, name string) *lexer.Token {
 func (p *Parser) parseIdentifier() *Identifier {
 	log.Println("Parsing identifier")
 	token := p.lexer.ReadNext()
-	if token.Typ != lexer.IdentifierToken {
+	if token.Typ != lexer.IdentifierToken && token.Typ != lexer.ContextToken {
 		log.Panicln("Expected identifier, got", token.String())
 	}
 	return newIdentifier(token)
@@ -364,7 +364,7 @@ func (p *Parser) Parse() *Class {
 			switch peeked[0].Typ {
 			case lexer.VarToken:
 				p.push(&Frame{State: StateVariableDeclStmt})
-			case lexer.IdentifierToken:
+			case lexer.IdentifierToken, lexer.ContextToken:
 				switch peeked[1].Typ {
 				case lexer.AssignToken:
 					p.push(&Frame{State: StateVariableAssignStmt})
@@ -489,7 +489,7 @@ func (p *Parser) Parse() *Class {
 			log.Println("Parsing ExpressionValue")
 			peeked := p.lexer.PeekSome(2)
 			switch peeked[0].Typ {
-			case lexer.IdentifierToken, lexer.StringToken, lexer.NumericToken:
+			case lexer.IdentifierToken, lexer.ContextToken, lexer.StringToken, lexer.NumericToken:
 			default:
 				p.unexpectedToken(peeked[0])
 			}
@@ -546,16 +546,22 @@ func (p *Parser) Parse() *Class {
 				continue
 			}
 
-			if peeked[0].Typ == lexer.IdentifierToken {
+			if peeked[0].Typ == lexer.IdentifierToken || peeked[0].Typ == lexer.ContextToken {
 				if !frame.ExprTree.CanAddLeaf() {
 					p.pushNode(frame.ExprTree.GetExpression())
 					continue
 				}
 				log.Println("Parsing identifier ExpressionValue")
 				token := p.lexer.Peek()
-				p.unexpectedTokenExpected(lexer.IdentifierToken, token)
+				if token.Typ != lexer.IdentifierToken && token.Typ != lexer.ContextToken {
+					p.unexpectedTokenExpected(lexer.IdentifierToken, token)
+				}
 				id := p.parseIdentifier()
-				frame.ExprTree.AddExpression(newIdentifierExpression(id, token))
+				if token.Typ == lexer.ContextToken {
+					frame.ExprTree.AddExpression(newContextExpression(id, token))
+				} else {
+					frame.ExprTree.AddExpression(newIdentifierExpression(id, token))
+				}
 				p.push(frame)
 				continue
 			}
@@ -580,7 +586,9 @@ func (p *Parser) Parse() *Class {
 			if frame.Identifier == nil {
 				log.Println("Parsing method call ExpressionValue")
 				token := p.lexer.Peek()
-				p.unexpectedTokenExpected(lexer.IdentifierToken, token)
+				if token.Typ != lexer.IdentifierToken && token.Typ != lexer.ContextToken {
+					p.unexpectedTokenExpected(lexer.IdentifierToken, token)
+				}
 
 				objectName := p.parseIdentifier()
 

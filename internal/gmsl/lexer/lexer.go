@@ -67,6 +67,12 @@ var keywords = map[string]TokenType{
 	"return": ReturnToken,
 }
 
+var contextNames = map[string]TokenType{
+	"player": ContextToken,
+	"room":   ContextToken,
+	"item":   ContextToken,
+}
+
 func (l *Lexer) hasPrefix(m map[string]TokenType) bool {
 	for k := range m {
 		if strings.HasPrefix(l.input[l.pos:], k+" ") {
@@ -246,25 +252,33 @@ func keywordState(l *Lexer) State {
 func identifierState(l *Lexer) State {
 	for {
 		if l.pos >= len(l.input) {
-			l.tokens <- Token{EofToken, ""}
-			return nil
+			emitIdentifier(l)
+			return defaultState
 		}
 
 		if isParenthesis(rune(l.input[l.pos])) || isOperator(rune(l.input[l.pos])) {
-			l.tokens <- Token{IdentifierToken, l.input[l.start:l.pos]}
-			l.start = l.pos
+			emitIdentifier(l)
 			return defaultState
 		}
 
 		switch l.input[l.pos] {
 		case ' ', '\t', '\n', '\r':
-			l.tokens <- Token{IdentifierToken, l.input[l.start:l.pos]}
-			l.start = l.pos
+			emitIdentifier(l)
 			return defaultState
 		default:
 			l.pos++
 		}
 	}
+}
+
+func emitIdentifier(l *Lexer) {
+	val := l.input[l.start:l.pos]
+	if tok, ok := contextNames[val]; ok {
+		l.tokens <- Token{tok, val}
+	} else {
+		l.tokens <- Token{IdentifierToken, val}
+	}
+	l.start = l.pos
 }
 
 func parenthesisState(l *Lexer) State {

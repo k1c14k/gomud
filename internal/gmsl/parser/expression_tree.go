@@ -17,9 +17,9 @@ func (et *ExpressionTree) AddExpression(expression Expression) {
 	if et.root == nil {
 		et.root = expression
 	} else {
-		switch expression.(type) {
+		switch e := expression.(type) {
 		case *BinaryExpression:
-			expression.(*BinaryExpression).Left, et.root = et.root, expression
+			e.Left, et.root = et.root, e
 		default:
 			et.root.(*BinaryExpression).Right = expression
 		}

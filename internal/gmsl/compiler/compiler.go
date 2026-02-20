@@ -1,6 +1,7 @@
 package compiler
 
 import (
+	"goMud/internal/gmsl/lexer"
 	"goMud/internal/gmsl/parser"
 	"log"
 	"strconv"
@@ -90,10 +91,6 @@ func (c *Compiler) processExpressionStatement(statement *parser.ExpressionStatem
 	f.addEntries(c.processExpression(&statement.ExpressionValue, f))
 }
 
-func isContextName(name string) bool {
-	return name == "player" || name == "room" || name == "item"
-}
-
 func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionInfo) []AssemblyEntry {
 	var result []AssemblyEntry
 	switch (*expression).(type) {
@@ -106,7 +103,7 @@ func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionI
 		result = append(result, *NewPushStringEntry(nil, nameIdx, *methodName.GetToken()))
 		objectName := (*expression).(*parser.MethodCallExpression).ObjectName
 		objectIdx := f.addString(objectName.Value)
-		if isContextName(objectName.Value) {
+		if objectName.GetToken().Typ == lexer.ContextToken {
 			result = append(result, *NewPushContextEntry(nil, objectIdx, *objectName.GetToken()))
 		} else {
 			result = append(result, *NewPushStringEntry(nil, objectIdx, *objectName.GetToken()))
@@ -125,6 +122,8 @@ func (c *Compiler) processExpression(expression *parser.Expression, f *FunctionI
 		result = append(result, *NewPushNumberEntry(nil, e.GetValue(), *e.GetToken()))
 	case *parser.IdentifierExpression:
 		result = append(result, c.processIdentifierExpression((*expression).(*parser.IdentifierExpression), f))
+	case *parser.ContextExpression:
+		result = append(result, c.processContextExpression((*expression).(*parser.ContextExpression), f))
 	default:
 		log.Panicln("Unknown expression type", (*expression).String())
 	}
@@ -160,6 +159,11 @@ func (c *Compiler) processIfStatement(statement *parser.IfStatement, f *Function
 
 func (c *Compiler) processIdentifierExpression(expression *parser.IdentifierExpression, f *FunctionInfo) AssemblyEntry {
 	return *NewPushFromRegisterEntry(nil, f.getRegisterOf(expression.Identifier.Value), *expression.GetToken())
+}
+
+func (c *Compiler) processContextExpression(expression *parser.ContextExpression, f *FunctionInfo) AssemblyEntry {
+	objectIdx := f.addString(expression.Context.Value)
+	return *NewPushContextEntry(nil, objectIdx, *expression.GetToken())
 }
 
 func (c *Compiler) processVariableDeclarationStatement(statement *parser.VariableDeclarationStatement, f *FunctionInfo) {

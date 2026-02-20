@@ -128,6 +128,10 @@ func (i *IdentifierExpression) PrettyPrint(_ int) string {
 	return i.Identifier.String()
 }
 
+func (c *ContextExpression) PrettyPrint(_ int) string {
+	return c.Context.String()
+}
+
 func (n *NumericLiteralExpression) PrettyPrint(_ int) string {
 	return n.token.GetRawValue()
 }

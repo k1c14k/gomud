@@ -104,6 +104,11 @@ type IdentifierExpression struct {
 	Identifier Identifier
 }
 
+type ContextExpression struct {
+	token   *lexer.Token
+	Context Identifier
+}
+
 type VariableDeclarationStatement struct {
 	token *lexer.Token
 	name  Identifier
@@ -437,6 +442,14 @@ func (i *IdentifierExpression) GetToken() *lexer.Token {
 
 func (i *IdentifierExpression) String() string {
 	return i.Identifier.String()
+}
+
+func (c *ContextExpression) GetToken() *lexer.Token {
+	return c.token
+}
+
+func (c *ContextExpression) String() string {
+	return c.Context.String()
 }
 
 func (n *NumericLiteralExpression) GetToken() *lexer.Token {

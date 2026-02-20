@@ -33,6 +33,10 @@ func newIdentifierExpression(name *Identifier, token *lexer.Token) *IdentifierEx
 	return &IdentifierExpression{token: token, Identifier: *name}
 }
 
+func newContextExpression(name *Identifier, token *lexer.Token) *ContextExpression {
+	return &ContextExpression{token: token, Context: *name}
+}
+
 func newIdentifier(token *lexer.Token) *Identifier {
 	return &Identifier{token: token, Value: token.GetRawValue()}
 }
